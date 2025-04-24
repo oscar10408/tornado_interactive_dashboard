@@ -17,39 +17,6 @@ alt.data_transformers.disable_max_rows()
 # import os
 # import csv
 
-# for year in range(2000,2025):
-#     # 設定檔案大小限制（例如 2GB）
-#     MAX_FILE_SIZE = 22 * 1024 * 1024  # 2GB in bytes
-#     input_file = "data/StormEvents_details-ftp_v1.0_d"+str(year)+"_c20250401.csv"
-#     output_prefix = "data_split/StormEvents_details-ftp_v1.0_d"+str(year)+"_c20250401_chunk_"
-
-#     with open(input_file, 'r', newline='', encoding='utf-8') as infile:
-#         reader = csv.reader(infile)
-#         header = next(reader)
-
-#         file_count = 1
-#         output_file = f"{output_prefix}{file_count}.csv"
-#         outfile = open(output_file, 'w', newline='', encoding='utf-8')
-#         writer = csv.writer(outfile)
-#         writer.writerow(header)
-
-#         current_size = os.path.getsize(output_file)
-
-#         for row in reader:
-#             writer.writerow(row)
-#             current_size += sum(len(field.encode('utf-8')) for field in row) + len(row)  # rough estimate
-#             if current_size >= MAX_FILE_SIZE:
-#                 outfile.close()
-#                 file_count += 1
-#                 output_file = f"{output_prefix}{file_count}.csv"
-#                 outfile = open(output_file, 'w', newline='', encoding='utf-8')
-#                 writer = csv.writer(outfile)
-#                 writer.writerow(header)
-#                 current_size = os.path.getsize(output_file)
-
-#         outfile.close()
-
-
 # In[62]:
 
 
