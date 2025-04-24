@@ -8,6 +8,7 @@
 
 import pandas as pd
 import altair as alt
+import glob
 alt.data_transformers.disable_max_rows()
 
 
@@ -19,17 +20,20 @@ alt.data_transformers.disable_max_rows()
 dfs = []
 
 for year in range(2000, 2025):
-    path = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401.csv"
-    
-    try:
-        df_year = pd.read_csv(path, encoding='latin1')
-        # df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
-        dfs.append(df_year)
-        print(f"Loaded {year} with {len(df_year)} rows.")
-    except FileNotFoundError:
-        print(f"File not found for year {year}")
-    except Exception as e:
-        print(f"Error reading {year}: {e}")
+    pattern = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
+    files = sorted(glob.glob(pattern))
+
+    if not files:
+        print(f"No files found for year {year}")
+        continue
+
+    for file in files:
+        try:
+            df_chunk = pd.read_csv(file, encoding='latin1')
+            dfs.append(df_chunk)
+            print(f"Loaded {file} with {len(df_chunk)} rows.")
+        except Exception as e:
+            print(f"Error reading {file}: {e}")
 
 # 合併所有年份的資料
 df = pd.concat(dfs, ignore_index=True)
