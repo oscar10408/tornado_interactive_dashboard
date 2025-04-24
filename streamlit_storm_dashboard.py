@@ -67,32 +67,35 @@ def load_2024_data():
 @st.cache_data
 def load_all_years_data():
     dfs = []
-    data_dir = os.path.join(os.path.dirname(__file__), 'data')
-    pattern = os.path.join(data_dir, 'StormEvents_details-ftp_v1.0_d*_c*.csv')
-    files = sorted(glob.glob(pattern))
+    for year in range(2000, 2001):  # Extended to 2024 to match data availability
+        pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
+        files = sorted(glob.glob(pattern))
+        if not files:
+            st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
+            continue
 
-    if not files:
-        st.error(f"❌ No files found in {data_dir} matching pattern {pattern}. Please check the 'data' directory in your GitHub repository.")
-        return pd.DataFrame()
-
-    for file in files:
-        try:
-            df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
-            if 'TOR_F_SCALE' in df_year.columns:
+        for file in files:
+            try:
+                df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
+                if 'TOR_F_SCALE' not in df_year.columns:
+                    st.sidebar.warning(f"⚠️ 'TOR_F_SCALE' column missing in {file}")
+                    continue
+                if 'BEGIN_TIME' not in df_year.columns:
+                    st.sidebar.warning(f"⚠️ 'BEGIN_TIME' column missing in {file}")
+                    continue
                 df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
                 dfs.append(df_year)
-                st.write(f"✅ Loaded {os.path.basename(file)} with {len(df_year)} rows.")
-            else:
-                st.warning(f"⚠️ Skipping {os.path.basename(file)}: 'TOR_F_SCALE' column missing.")
-        except Exception as e:
-            st.error(f"❌ Error reading {os.path.basename(file)}: {e}")
+                # st.write(f"Loaded {file} with {len(df_year)} rows.")
+            except Exception as e:
+                st.sidebar.error(f"❌ Error reading {file}: {e}")
 
     if not dfs:
-        st.error("❌ No valid data loaded. Check file contents and column names.")
+        st.error("⚠️ No data files loaded. Please check the data directory and file patterns.")
         return pd.DataFrame()
 
-    combined_df = pd.concat(dfs, ignore_index=True)
-    return combined_df
+    df = pd.concat(dfs, ignore_index=True)
+    return df
+
 
 
 # ========== SIDEBAR ==========
