@@ -416,7 +416,26 @@ else:
                 width=80,
                 height=300
             )
+            
+            bar_left_label = bar_left_base.transform_window(
+                rank='rank(total)',
+                sort=[alt.SortField('total', order='descending')]
+            ).transform_filter(
+                alt.datum.rank == 1
+            ).mark_text(
+                align='left',
+                dx=5,
+                fontSize=11,
+                fontWeight='bold',
+                color='white'
+            ).encode(
+                y=alt.Y('ydim:O'),
+                x=alt.X('total:Q'),
+                text=alt.Text('total:Q', format=".0f")
+            )
 
+            bar_left = bar_left + bar_left_label
+            
             # ----- Right Labels (for Month/Year) -----
             bar_right_labels = alt.Chart(filtered_data).add_params(
                 selector,
