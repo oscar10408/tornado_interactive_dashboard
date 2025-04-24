@@ -64,7 +64,6 @@ def load_2024_data():
         st.error("❌ Data file not found.")
         return pd.DataFrame()
 
-@st.cache_data
 def load_all_years_data():
     dfs = []
     for year in range(2000, 2025):  # Extended to 2024 to match data availability
