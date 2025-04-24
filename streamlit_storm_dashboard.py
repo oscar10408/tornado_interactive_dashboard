@@ -67,8 +67,8 @@ def load_2024_data():
 @st.cache_data
 def load_all_years_data():
     dfs = []
-    for year in range(2000, 2025):  # Extended to 2024 to match data availability
-        pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
+    for year in range(2000, 2001):  # Extended to 2024 to match data availability
+        pattern = f"C:/Users/oscar10408/OneDrive/桌面/tornado_interactive_dashboard/data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
         files = sorted(glob.glob(pattern))
         if not files:
             st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
@@ -97,39 +97,65 @@ def load_all_years_data():
     return df
 
 
-
 # ========== SIDEBAR ==========
 st.sidebar.title("Tornado Dashboard Settings")
 view_mode = st.sidebar.radio("Select View", ['2024 State Analysis', 'Multi-Year Heatmap'])
 
 # ========== VIEW 1: STATE ANALYSIS 2024 ==========
 if view_mode == '2024 State Analysis':
-    df = load_2024_data()
+
+    available_years = list(range(2000, 2025))
+    selected_year = st.sidebar.selectbox("Select Year:", available_years, index=available_years.index(2024))
+    df = load_data_by_year(selected_year)
+
     all_states = sorted(df["STATE"].dropna().unique().tolist())
-    if "NEVADA" not in all_states:
-        all_states.append("NEVADA")
+    st.sidebar.markdown("### State Filters")
+    selected_state = st.sidebar.selectbox("Select State:", ["All States"] + all_states)
 
-    st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
-    # --- Map Section ---
-    st.subheader("1️⃣ Geographic Distribution")
-    selected_state_map = st.selectbox("Select State for Map Insight:", ["All States"] + all_states)
+    # Dynamically ensure all US states are represented in the map
+    # regardless of whether they have tornadoes in the selected year
+    full_state_df = pd.DataFrame(
+        [(state.name.upper(), int(state.fips)) for state in us.states.STATES],
+        columns=["STATE", "STATE_FIPS"]
+    )
+    full_state_df["id"] = full_state_df["STATE_FIPS"]
 
-    # Map Data Prep
+    # Aggregate tornado data per state
     state_stats = df.groupby(["STATE", "STATE_FIPS"]).agg(
         tornado_count=('TOR_F_SCALE', 'count'),
         avg_intensity=('intensity', 'mean')
     ).reset_index()
-    state_stats['id'] = state_stats['STATE_FIPS'].astype(int)
-    if "NEVADA" not in state_stats["STATE"].values:
-        state_stats = pd.concat([
-            state_stats,
-            pd.DataFrame([{"STATE": "NEVADA", "STATE_FIPS": "32", "tornado_count": 0, "avg_intensity": 0, "id": 32}])
-        ])
+
+    # Add `id` for merge
+    state_stats["id"] = state_stats["STATE_FIPS"]
+
+    # Merge to ensure all states are included
+    state_stats = pd.merge(
+        full_state_df,
+        state_stats,
+        on=["STATE", "STATE_FIPS", "id"],
+        how="left"
+    )
+    state_stats["tornado_count"] = state_stats["tornado_count"].fillna(0)
+    state_stats["avg_intensity"] = state_stats["avg_intensity"].fillna(0)
+
+    # --- MAP SECTION ---
+    st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
+    st.subheader(f"1️⃣ Geographic Distribution – {selected_state}, {selected_year}")
 
     states_geo = alt.topo_feature(data.us_10m.url, 'states')
+
     map_chart = alt.Chart(states_geo).mark_geoshape().encode(
-        color=alt.Color('tornado_count:Q', scale=alt.Scale(scheme='reds'), title='Tornado Count'),
-        tooltip=["STATE:N", "tornado_count:Q"]
+        color=alt.condition(
+            alt.datum.tornado_count > 0,
+            alt.Color('tornado_count:Q', scale=alt.Scale(scheme='reds'), title='Tornado Count'),
+            alt.value('lightgray')  # gray fallback for no tornadoes
+        ),
+        tooltip=[
+            alt.Tooltip('STATE:N', title='State'),
+            alt.Tooltip('tornado_count:Q', title='Tornado Count'),
+            alt.Tooltip('avg_intensity:Q', title='Avg Intensity')
+        ]
     ).transform_lookup(
         lookup='id',
         from_=alt.LookupData(state_stats, key='id', fields=['STATE', 'tornado_count', 'avg_intensity'])
@@ -139,15 +165,14 @@ if view_mode == '2024 State Analysis':
 
     st.altair_chart(map_chart, use_container_width=True)
 
+
     # Filtered Data
     def filter_state(df, selected_state):
         return df if selected_state == "All States" else df[df["STATE"] == selected_state]
 
     # --- Monthly Trend Chart ---
-    st.subheader("2️⃣ Monthly Tornado Trends")
-    selected_state_trend = st.selectbox("Select State for Monthly Trends:", ["All States"] + all_states)
-
-    df_trend = filter_state(df, selected_state_trend)
+    st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
+    df_trend = filter_state(df, selected_state)
     brush = alt.selection_interval(encodings=["x"])
 
     intensity = alt.Chart(df_trend).mark_line(point=True).encode(
@@ -166,14 +191,12 @@ if view_mode == '2024 State Analysis':
     st.altair_chart((intensity + count).resolve_scale(y="independent").properties(width=800, height=250), use_container_width=True)
 
     # --- Scatter Chart ---
-    st.subheader("3️⃣ Tornado Size: Length vs. Width")
-    selected_state_scatter = st.selectbox("Highlight State in Scatter Plot:", ["All States"] + all_states)
-
+    st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
     scatter_base = alt.Chart(df).mark_circle(size=60).encode(
         x="TOR_LENGTH:Q",
         y="TOR_WIDTH:Q",
         color=alt.condition(
-            alt.datum.STATE == selected_state_scatter,
+            alt.datum.STATE == selected_state,
             alt.value("orange"),
             alt.value("lightgray")
         ),
@@ -183,10 +206,10 @@ if view_mode == '2024 State Analysis':
     st.altair_chart(scatter_base, use_container_width=True)
 
     # --- Scale Bar Chart ---
-    st.subheader("4️⃣ Tornado Frequency by Fujita Scale")
+    st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
     selected_state_scale = st.selectbox("Select State for Fujita Scale Bar Chart:", ["All States"] + all_states)
 
-    df_scale = filter_state(df, selected_state_scale)
+    df_scale = filter_state(df, selected_state)
 
     scale_chart = alt.Chart(df_scale).mark_bar().encode(
         x="TOR_F_SCALE:N",
@@ -455,7 +478,11 @@ else:
                 title="When do tornadoes occur? What is their effect?"
             )
 
-            st.altair_chart(full_layout, use_container_width=False)
+        col1, col2, col3 = st.columns([1, 2, 1])
+
+        with col2:
+            with st.container():
+                st.altair_chart(full_layout, use_container_width=False)
 
             # Footer
             st.markdown("---")
