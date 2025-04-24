@@ -4,6 +4,8 @@ import altair as alt
 from vega_datasets import data as vega_data
 import us
 import os
+import glob
+
 
 
 st.set_page_config(layout="wide")
@@ -152,16 +154,26 @@ st.subheader("📊 Tornado Characteristics and Severity Analysis")
 st.altair_chart(final_chart, use_container_width=True)
 
 
+
 def load_multi_year_data():
     dfs = []
     for year in range(2000, 2002):
-        path = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
-        try:
-            df_year = pd.read_csv(path, on_bad_lines='skip', engine='python')
-            df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
-            dfs.append(df_year)
-        except Exception:
-            continue
+        pattern = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
+        files = sorted(glob.glob(pattern))
+
+        for file in files:
+            try:
+                df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
+                df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
+                dfs.append(df_year)
+                print(f"Loaded {file} with {len(df_year)} rows.")
+            except Exception as e:
+                print(f"❌ Error reading {file}: {e}")
+
+    if not dfs:
+        print("⚠️ No files loaded.")
+        return pd.DataFrame(), pd.DataFrame()
+
     df = pd.concat(dfs, ignore_index=True)
 
     df['BEGIN_TIME'] = df['BEGIN_TIME'].astype(str).str.zfill(4)
