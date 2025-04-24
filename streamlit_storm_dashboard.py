@@ -67,8 +67,8 @@ def load_2024_data():
 @st.cache_data
 def load_all_years_data():
     dfs = []
-    for year in range(2000, 2001):  # Extended to 2024 to match data availability
-        pattern = f"C:/Users/oscar10408/OneDrive/桌面/tornado_interactive_dashboard/data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
+    for year in range(2000, 2002):  # Extended to 2024 to match data availability
+        pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
         files = sorted(glob.glob(pattern))
         if not files:
             st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
