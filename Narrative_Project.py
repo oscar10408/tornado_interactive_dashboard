@@ -3,7 +3,7 @@
 
 # # Narrative Project
 
-# In[88]:
+# In[1]:
 
 
 import pandas as pd
@@ -11,7 +11,46 @@ import altair as alt
 alt.data_transformers.disable_max_rows()
 
 
-# In[113]:
+# In[ ]:
+
+
+# import os
+# import csv
+
+# for year in range(2000,2025):
+#     # 設定檔案大小限制（例如 2GB）
+#     MAX_FILE_SIZE = 22 * 1024 * 1024  # 2GB in bytes
+#     input_file = "data/StormEvents_details-ftp_v1.0_d"+str(year)+"_c20250401.csv"
+#     output_prefix = "data_split/StormEvents_details-ftp_v1.0_d"+str(year)+"_c20250401_chunk_"
+
+#     with open(input_file, 'r', newline='', encoding='utf-8') as infile:
+#         reader = csv.reader(infile)
+#         header = next(reader)
+
+#         file_count = 1
+#         output_file = f"{output_prefix}{file_count}.csv"
+#         outfile = open(output_file, 'w', newline='', encoding='utf-8')
+#         writer = csv.writer(outfile)
+#         writer.writerow(header)
+
+#         current_size = os.path.getsize(output_file)
+
+#         for row in reader:
+#             writer.writerow(row)
+#             current_size += sum(len(field.encode('utf-8')) for field in row) + len(row)  # rough estimate
+#             if current_size >= MAX_FILE_SIZE:
+#                 outfile.close()
+#                 file_count += 1
+#                 output_file = f"{output_prefix}{file_count}.csv"
+#                 outfile = open(output_file, 'w', newline='', encoding='utf-8')
+#                 writer = csv.writer(outfile)
+#                 writer.writerow(header)
+#                 current_size = os.path.getsize(output_file)
+
+#         outfile.close()
+
+
+# In[62]:
 
 
 dfs = []
@@ -21,7 +60,7 @@ for year in range(2000, 2025):
     
     try:
         df_year = pd.read_csv(path, encoding='latin1')
-        df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
+        # df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
         dfs.append(df_year)
         print(f"Loaded {year} with {len(df_year)} rows.")
     except FileNotFoundError:
@@ -33,7 +72,7 @@ for year in range(2000, 2025):
 df = pd.concat(dfs, ignore_index=True)
 
 
-# In[ ]:
+# In[5]:
 
 
 df = df[~df['TOR_F_SCALE'].isna()].copy()
@@ -57,7 +96,7 @@ df["DEATHS"] = df["DEATHS_INDIRECT"] + df["DEATHS_DIRECT"]
 df["YEAR"] = df['BEGIN_YEARMONTH'].astype(str).str[:4].astype(int)
 
 
-# In[115]:
+# In[6]:
 
 
 # Helper function to convert strings like "25.00M" to float
@@ -79,7 +118,7 @@ df['DAMAGE_PROPERTY_PARSED'] = df['DAMAGE_PROPERTY'].apply(parse_damage)
 df['DAMAGE_CROPS_PARSED'] = df['DAMAGE_CROPS'].apply(parse_damage)
 
 
-# In[116]:
+# In[7]:
 
 
 # Fold the data so it works dynamically
@@ -101,7 +140,7 @@ folded_df['HOUR'] = folded_df['HOUR'].astype(int)
 folded_df['YEAR'] = folded_df['YEAR'].astype(int)
 
 
-# In[117]:
+# In[8]:
 
 
 # Create selector
@@ -116,7 +155,7 @@ selector = alt.param(
 )
 
 
-# In[118]:
+# In[9]:
 
 
 cell_select = alt.selection_point(
@@ -127,7 +166,7 @@ cell_select = alt.selection_point(
 )
 
 
-# In[119]:
+# In[10]:
 
 
 axis_selector = alt.param(
@@ -141,14 +180,14 @@ axis_selector = alt.param(
 )
 
 
-# In[120]:
+# In[11]:
 
 
 year_min = alt.param(name='year_min', value=2000, bind=alt.binding_range(min=2000, max=2025, name='Start Year', step=1))
 year_max = alt.param(name='year_max', value=2025, bind=alt.binding_range(min=2000, max=2025, name='End Year', step=1))
 
 
-# In[151]:
+# In[56]:
 
 
 # ----- Central Heatmap -----
@@ -168,7 +207,8 @@ heatmap = alt.Chart(folded_df).add_params(
     groupby=['xdim', 'ydim'] 
 ).mark_rect().encode(
     x=alt.X('xdim:O', title=None, axis=alt.Axis(labelAngle=0)),
-    y=alt.Y('ydim:O', title=None, axis=alt.Axis(labels=False, ticks=False, grid=False)),
+    y=alt.Y('ydim:O', sort=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+             title=None, axis=alt.Axis(labels=False, ticks=False, grid=False),),
     color=alt.Color('value:Q', scale=alt.Scale(scheme='blues'), title="Metric Value", legend=alt.Legend(orient='bottom')),
     tooltip=[
         alt.Tooltip('xdim:O', title='X'),
@@ -182,7 +222,7 @@ heatmap = alt.Chart(folded_df).add_params(
 
 
 # ----- Top Bar Chart (per Hour) -----
-bar_top = alt.Chart(folded_df).add_params(
+bar_top_base = alt.Chart(folded_df).add_params(
     selector,
     axis_selector,
     year_min,
@@ -196,7 +236,10 @@ bar_top = alt.Chart(folded_df).add_params(
 ).transform_aggregate(
     total='sum(value)',
     groupby=['xdim']
-).mark_bar().encode(
+)
+
+
+bar_top = bar_top_base.mark_bar().encode(
     x=alt.X('xdim:O', title=None, axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
     y=alt.Y('total:Q', title=None, axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
     color=alt.Color('total:Q', scale=alt.Scale(scheme='blues'), legend=None),
@@ -205,8 +248,28 @@ bar_top = alt.Chart(folded_df).add_params(
     width=600,
     height=80
 )
+
+
+bar_top_label = bar_top_base.transform_window(
+    rank='rank(total)',
+    sort=[alt.SortField('total', order='descending')]
+).transform_filter(
+    alt.datum.rank == 1
+).mark_text(
+    align='center',
+    dy=-5,
+    fontSize=11,
+    fontWeight='bold'
+).encode(
+    x=alt.X('xdim:O'),
+    y=alt.Y('total:Q'),
+    text=alt.Text('total:Q', format=".0f")
+)
+
+bar_top = bar_top + bar_top_label
+
 # ----- Left Bar Chart (per Month) -----
-bar_left = alt.Chart(folded_df).add_params(
+bar_left_base = alt.Chart(folded_df).add_params(
     selector,
     axis_selector,
     year_min,
@@ -220,7 +283,9 @@ bar_left = alt.Chart(folded_df).add_params(
 ).transform_aggregate(
     total='sum(value)',
     groupby=['ydim']
-).mark_bar().encode(
+)
+
+bar_left = bar_left_base.mark_bar().encode(
     y=alt.Y('ydim:O', title=None, axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
     x=alt.X('total:Q', title=None, scale=alt.Scale(reverse=True), axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
     color=alt.Color('total:Q', scale=alt.Scale(scheme='blues'), legend=None),
@@ -230,8 +295,28 @@ bar_left = alt.Chart(folded_df).add_params(
     height=300
 )
 
+bar_left_label = bar_left_base.transform_window(
+    rank='rank(total)',
+    sort=[alt.SortField('total', order='descending')]
+).transform_filter(
+    alt.datum.rank == 1
+).mark_text(
+    align='left',
+    fontSize=11,
+    dx=5,
+    color='white',
+    fontWeight='bold'
+).encode(
+    y=alt.Y('ydim:O'),
+    x=alt.X('total:Q'),
+    text=alt.Text('total:Q', format=".0f")
+)
 
-# In[152]:
+bar_left = bar_left + bar_left_label
+
+
+
+# In[57]:
 
 
 bar_right_labels = alt.Chart(folded_df).add_params(
@@ -256,7 +341,7 @@ bar_right_labels = alt.Chart(folded_df).add_params(
 )
 
 
-# In[153]:
+# In[58]:
 
 
 spacer = alt.Chart(pd.DataFrame({'x': [0], 'y': [0]})).mark_point(opacity=0).encode(
@@ -295,6 +380,13 @@ full_layout = layout.configure_axis(
     color='independent'
 ).configure_view(
     stroke=None  # Remove all chart borders
+).configure_title(
+    fontSize=24,      
+    anchor='middle',  
+    font='Arial',     
+    color='black'     
+).properties(
+    title="When do tornadoes occur? What is their effect?"
 )
 
 full_layout
@@ -302,7 +394,7 @@ full_layout
 
 # # Map
 
-# In[60]:
+# In[16]:
 
 
 import altair as alt
@@ -310,35 +402,25 @@ import pandas as pd
 import us
 from vega_datasets import data
 
-# First, let's prepare the tornado data
-# Filter to only tornado events that have TOR_F_SCALE values
 tornado_data = df[~df['TOR_F_SCALE'].isna()].copy()
 
-# Convert F-scale to numeric for intensity calculation
 tornado_data['intensity'] = tornado_data['TOR_F_SCALE'].str.extract('(\d+)').astype(float)
 
-# Ensure date/time columns are properly formatted
 tornado_data['date'] = pd.to_datetime(tornado_data['BEGIN_DATE_TIME'])
 tornado_data['month'] = tornado_data['date'].dt.month
 
-# Create selections
-# State selection for the map - using click instead of interval for clearer interaction
 state_select = alt.selection_multi(fields=['STATE'])
 
-# Time interval selection for the monthly chart
 time_brush = alt.selection_interval(encodings=['x'])
 
-# Calculate state stats for the map
 state_tornado_stats = tornado_data.groupby(['STATE', 'STATE_FIPS']).agg(
     tornado_count=('TOR_F_SCALE', 'count'),
     avg_intensity=('intensity', 'mean'),
     avg_length=('TOR_LENGTH', 'mean')
 ).reset_index()
 
-# Get US states geojson for the map
 states = alt.topo_feature(data.us_10m.url, 'states')
 
-# Create the map with state tornado counts
 map_chart = alt.Chart(states).mark_geoshape().encode(
     color=alt.condition(
         state_select,
@@ -356,7 +438,7 @@ map_chart = alt.Chart(states).mark_geoshape().encode(
     lookup='id',
     from_=alt.LookupData(
         data=state_tornado_stats,
-        key='STATE_FIPS', 
+        key='STATE_FIPS',
         fields=['STATE', 'tornado_count', 'avg_intensity', 'avg_length']
     )
 ).transform_calculate(
@@ -373,10 +455,9 @@ map_chart = alt.Chart(states).mark_geoshape().encode(
     state_select
 )
 
-# Create a monthly tornado intensity chart (line)
 intensity_chart = alt.Chart(tornado_data).mark_line(point=True).encode(
     x=alt.X('month:O', title='Month', axis=alt.Axis(labelAngle=0)),
-    y=alt.Y('average(intensity):Q', 
+    y=alt.Y('average(intensity):Q',
            title='Average Tornado Intensity',
            scale=alt.Scale(domain=[0, 5])),
     color=alt.value('orange'),
@@ -387,10 +468,9 @@ intensity_chart = alt.Chart(tornado_data).mark_line(point=True).encode(
     state_select
 )
 
-# Create a monthly tornado count chart (bars)
 count_chart = alt.Chart(tornado_data).mark_bar(opacity=0.5).encode(
     x=alt.X('month:O', title='Month'),
-    y=alt.Y('count():Q', 
+    y=alt.Y('count():Q',
            title='Number of Tornado Events',
            axis=alt.Axis(titleColor='steelblue')),
     color=alt.value('steelblue')
@@ -398,12 +478,12 @@ count_chart = alt.Chart(tornado_data).mark_bar(opacity=0.5).encode(
     state_select
 )
 
-# Layer the two charts with dual axes
+
 monthly_chart = alt.layer(
-    intensity_chart, 
+    intensity_chart,
     count_chart
 ).resolve_scale(
-    y='independent'  # Use independent y-scales for intensity and count
+    y='independent'
 ).properties(
     width=700,
     height=200,
@@ -412,7 +492,6 @@ monthly_chart = alt.layer(
     time_brush
 )
 
-# Create a scatter plot showing tornado characteristics
 scatter_chart = alt.Chart(tornado_data).mark_circle().encode(
     x=alt.X('TOR_LENGTH:Q', title='Tornado Length (miles)'),
     y=alt.Y('TOR_WIDTH:Q', title='Tornado Width (yards)'),
@@ -490,96 +569,55 @@ final_chart
 full_layout
 
 
+# In[64]:
+
+
+import pandas as pd
+import altair as alt
+
+# Aggregate totals
+agg_df = df.groupby('EVENT_TYPE').agg({
+    'TOTAL_INJURIES': 'sum',
+    'TOTAL_DEATHS': 'sum',
+    'DAMAGE_PROPERTY_NUM': 'sum',
+    'DAMAGE_CROPS_NUM': 'sum'
+}).reset_index()
+
+# Function to generate each chart
+def make_chart(df, value_col, title, color):
+    top10 = df.nlargest(10, value_col).copy()
+    top10['EVENT_TYPE'] = pd.Categorical(
+        top10['EVENT_TYPE'],
+        categories=top10.sort_values(value_col, ascending=False)['EVENT_TYPE'],
+        ordered=True
+    )
+
+    return alt.Chart(top10).mark_bar().encode(
+        y=alt.Y('EVENT_TYPE:N', sort=None, title='Event Type'),
+        x=alt.X(f'{value_col}:Q', title=None),
+        tooltip=['EVENT_TYPE:N', f'{value_col}:Q'],
+        color=alt.value(color)
+    ).properties(
+        width=300,
+        height=200,
+        title=title
+    )
+
+# Create each of the 4 charts
+injuries_chart = make_chart(agg_df, 'TOTAL_INJURIES', 'Top 10 by Injuries', '#e15759')
+deaths_chart = make_chart(agg_df, 'TOTAL_DEATHS', 'Top 10 by Deaths', '#4e79a7')
+prop_damage_chart = make_chart(agg_df, 'DAMAGE_PROPERTY_NUM', 'Top 10 by Property Damage', '#f28e2b')
+crop_damage_chart = make_chart(agg_df, 'DAMAGE_CROPS_NUM', 'Top 10 by Crop Damage', '#76b7b2')
+
+# Arrange in 2x2 grid
+final_chart = (injuries_chart | deaths_chart) & (prop_damage_chart | crop_damage_chart)
+final_chart
+
+
 # # Website Design
 
-# In[179]:
+# In[1]:
 
 
-import streamlit as st
-import altair as alt
-import pandas as pd
-
-col1, col2 = st.columns([1, 2])  # adjust ratio as needed
-
-with col1:
-    st.subheader("Narrative")
-    st.write("Category C dominates, possibly due to recent campaign boosts...")
-
-with col2:
-    st.altair_chart(full_layout, use_container_width=True)
-
-
-# # In[178]:
-
-
-# # Step 1: 儲存 Altair 圖表
-# full_layout.save('chart1.html')  # 儲存圖表為獨立檔案
-
-# # Step 2: 建立總覽 HTML，內嵌 iframe 指向 chart1.html
-# html_content = """
-# <!DOCTYPE html>
-# <html lang="en">
-# <head>
-#   <meta charset="UTF-8" />
-#   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-#   <title>All Altair Charts</title>
-#   <style>
-#     body {
-#       margin: 0;
-#       background-color: white;
-#       font-family: Arial, sans-serif;
-#       color: white;
-#     }
-
-#     h1, h2 {
-#       text-align: center;
-#       margin-top: 1rem;
-#     }
-
-#     .iframe-wrapper {
-#       position: relative;
-#       width: 100%;
-#       padding-bottom: 60vh; /* 60% of viewport height */
-#       height: 0;
-#       overflow: hidden;
-#       margin-bottom: 2rem;
-#     }
-
-#     .iframe-wrapper iframe {
-#       position: absolute;
-#       top: 0;
-#       left: 0;
-#       width: 100%;
-#       height: 100%;
-#       border: none;
-#     }
-#   </style>
-# </head>
-# <body>
-#   <h1>All Visualizations</h1>
-
-#   <h2>Visualization 1</h2>
-#   <div class="iframe-wrapper">
-#     <iframe src="chart1.html"></iframe>
-#   </div>
-
-# </body>
-# </html>
-# """
-
-# # Step 3: 儲存主頁 HTML（**注意檔名不同**）
-# with open("index.html", "w", encoding="utf-8") as f:
-#     f.write(html_content)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+full_layout.save('heatmap.html')
 
