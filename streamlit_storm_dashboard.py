@@ -67,7 +67,7 @@ def load_2024_data():
 @st.cache_data
 def load_all_years_data():
     dfs = []
-    for year in range(2000, 2002):  # Extended to 2024 to match data availability
+    for year in range(2000, 2025):  # Extended to 2024 to match data availability
         pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
         files = sorted(glob.glob(pattern))
         if not files:
