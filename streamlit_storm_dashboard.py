@@ -34,7 +34,7 @@ st.markdown("---")
 @st.cache_data
 
 def load_data():
-    file_path = os.path.join(os.path.dirname(__file__), 'StormEvents_details-ftp_v1.0_d2024_c20250401.csv')
+    file_path = os.path.join(os.path.dirname(__file__), 'data/StormEvents_details-ftp_v1.0_d2024_c20250401_chunk_1.csv')
     if os.path.exists(file_path):
         df = pd.read_csv(file_path, encoding='latin1')
         return df
