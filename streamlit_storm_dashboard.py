@@ -189,38 +189,6 @@ if view_mode == '2024 State Analysis':
 
 # ========== VIEW 2: MULTI-YEAR HEATMAP ==========
 else:
-    @st.cache_data
-    def load_all_years_data():
-        dfs = []
-        for year in range(2000, 2002):  # Extended to 2024 to match data availability
-            pattern = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
-            files = sorted(glob.glob(pattern))
-            if not files:
-                st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
-                continue
-
-            for file in files:
-                try:
-                    df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
-                    if 'TOR_F_SCALE' not in df_year.columns:
-                        st.sidebar.warning(f"⚠️ 'TOR_F_SCALE' column missing in {file}")
-                        continue
-                    if 'BEGIN_TIME' not in df_year.columns:
-                        st.sidebar.warning(f"⚠️ 'BEGIN_TIME' column missing in {file}")
-                        continue
-                    df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
-                    dfs.append(df_year)
-                    st.write(f"Loaded {file} with {len(df_year)} rows.")
-                except Exception as e:
-                    st.sidebar.error(f"❌ Error reading {file}: {e}")
-
-        if not dfs:
-            st.error("⚠️ No data files loaded. Please check the data directory and file patterns.")
-            return pd.DataFrame()
-
-        df = pd.concat(dfs, ignore_index=True)
-        return df
-
     df = load_all_years_data()
 
     if df.empty:
@@ -275,21 +243,21 @@ else:
                 value_name='value'
             )
 
-            # Sidebar controls for heatmap
+            # Sidebar controls for heatmap (replacing Altair bindings)
             st.sidebar.header("Heatmap Settings")
             metric = st.sidebar.selectbox(
-                "Select Metric",
+                "Display Metric:",
                 ['COUNT', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES', 'DEATHS'],
                 format_func=lambda x: {
                     'COUNT': 'Number of occurrences',
-                    'DAMAGE_PROPERTY': 'Property Damage',
-                    'DAMAGE_CROPS': 'Crop Damage',
+                    'DAMAGE_PROPERTY': 'Damage to properties',
+                    'DAMAGE_CROPS': 'Damage to crops',
                     'INJURIES': 'Injuries',
                     'DEATHS': 'Deaths'
                 }[x]
             )
             axis_mode = st.sidebar.selectbox(
-                "Axis Mode",
+                "Axis:",
                 ['hour_month', 'hour_year', 'year_month'],
                 format_func=lambda x: {
                     'hour_month': 'Hour vs Month',
@@ -299,31 +267,183 @@ else:
             )
             year_range = st.sidebar.slider("Year Range", min_value=2000, max_value=2024, value=(2000, 2024))
 
-            # Filter data based on selections
-            folded = folded[folded['metric'] == metric]
-            folded = folded[(folded['YEAR'] >= year_range[0]) & (folded['YEAR'] <= year_range[1])]
+            # Define Altair selectors
+            selector = alt.param(name='metric', value=metric)
+            axis_selector = alt.param(name='axis_mode', value=axis_mode)
+            year_min = alt.param(name='year_min', value=year_range[0])
+            year_max = alt.param(name='year_max', value=year_range[1])
+            cell_select = alt.selection_point(
+                name='cell_select',
+                fields=['MONTH_NAME', 'HOUR'],
+                on='click',
+                clear='mouseout'
+            )
 
-            # Create heatmap
-            heatmap = alt.Chart(folded).transform_calculate(
-                xdim=f"toNumber(datum.HOUR)" if 'hour' in axis_mode else "datum.YEAR",
-                ydim=f"datum.MONTH_NAME" if 'month' in axis_mode else "toNumber(datum.YEAR)"
+            # Filter data early to reduce processing
+            filtered_data = folded[
+                (folded['metric'] == metric) &
+                (folded['YEAR'] >= year_range[0]) &
+                (folded['YEAR'] <= year_range[1])
+            ]
+
+            # ----- Central Heatmap -----
+            heatmap = alt.Chart(filtered_data).add_params(
+                selector,
+                axis_selector,
+                year_min,
+                year_max,
+                cell_select
+            ).transform_calculate(
+                xdim="toNumber(axis_mode === 'hour_month' || axis_mode === 'hour_year' ? datum.HOUR : datum.YEAR)",
+                ydim="axis_mode === 'hour_month' || axis_mode === 'year_month' ? datum.MONTH_NAME : toNumber(datum.YEAR)"
             ).transform_aggregate(
-                value='sum(value)', groupby=['xdim', 'ydim']
+                value='sum(value)',
+                groupby=['xdim', 'ydim']
             ).mark_rect().encode(
-                x=alt.X('xdim:O', title=None),
-                y=alt.Y('ydim:O', title=None, sort=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] if 'month' in axis_mode else None),
-                color=alt.Color('value:Q', scale=alt.Scale(scheme='blues'), title="Metric Value"),
+                x=alt.X('xdim:O', title=None, axis=alt.Axis(labelAngle=0)),
+                y=alt.Y('ydim:O', sort=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        title=None, axis=alt.Axis(labels=False, ticks=False, grid=False)),
+                color=alt.Color('value:Q', scale=alt.Scale(scheme='blues'), title="Metric Value", legend=alt.Legend(orient='bottom')),
                 tooltip=[
                     alt.Tooltip('xdim:O', title='X'),
                     alt.Tooltip('ydim:O', title='Y'),
-                    alt.Tooltip('value:Q', title='Value')
+                    alt.Tooltip('value:Q', title='Metric Value')
                 ]
             ).properties(
                 width=600,
                 height=300
             )
 
-            # Center the heatmap
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                st.altair_chart(heatmap, use_container_width=False)
+            # ----- Top Bar Chart (per Hour) -----
+            bar_top_base = alt.Chart(filtered_data).add_params(
+                selector,
+                axis_selector,
+                year_min,
+                year_max
+            ).transform_calculate(
+                xdim="toNumber(axis_mode === 'hour_month' || axis_mode === 'hour_year' ? datum.HOUR : datum.YEAR)",
+                ydim="axis_mode === 'hour_month' || axis_mode === 'year_month' ? datum.MONTH_NAME : toNumber(datum.YEAR)"
+            ).transform_aggregate(
+                total='sum(value)',
+                groupby=['xdim']
+            )
+
+            bar_top = bar_top_base.mark_bar().encode(
+                x=alt.X('xdim:O', title=None, axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
+                y=alt.Y('total:Q', title=None, axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
+                color=alt.Color('total:Q', scale=alt.Scale(scheme='blues'), legend=None),
+                tooltip=[alt.Tooltip('xdim:O', title='X'), alt.Tooltip('total:Q', title='Metric Value')]
+            ).properties(
+                width=600,
+                height=80
+            )
+
+            bar_top_label = bar_top_base.transform_window(
+                rank='rank(total)',
+                sort=[alt.SortField('total', order='descending')]
+            ).transform_filter(
+                alt.datum.rank == 1
+            ).mark_text(
+                align='center',
+                dy=-5,
+                fontSize=11,
+                fontWeight='bold'
+            ).encode(
+                x=alt.X('xdim:O'),
+                y=alt.Y('total:Q'),
+                text=alt.Text('total:Q', format=".0f")
+            )
+
+            bar_top = bar_top + bar_top_label
+
+            # ----- Left Bar Chart (per Month) -----
+            bar_left_base = alt.Chart(filtered_data).add_params(
+                selector,
+                axis_selector,
+                year_min,
+                year_max
+            ).transform_calculate(
+                xdim="toNumber(axis_mode === 'hour_month' || axis_mode === 'hour_year' ? datum.HOUR : datum.YEAR)",
+                ydim="axis_mode === 'hour_month' || axis_mode === 'year_month' ? datum.MONTH_NAME : toNumber(datum.YEAR)"
+            ).transform_aggregate(
+                total='sum(value)',
+                groupby=['ydim']
+            )
+
+            bar_left = bar_left_base.mark_bar().encode(
+                y=alt.Y('ydim:O', title=None, sort=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
+                x=alt.X('total:Q', title=None, scale=alt.Scale(reverse=True), axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
+                color=alt.Color('total:Q', scale=alt.Scale(scheme='blues'), legend=None),
+                tooltip=[alt.Tooltip('ydim:O', title='Y'), alt.Tooltip('total:Q', title='Metric Value')]
+            ).properties(
+                width=80,
+                height=300
+            )
+
+            # ----- Right Labels (for Month/Year) -----
+            bar_right_labels = alt.Chart(filtered_data).add_params(
+                selector,
+                axis_selector,
+                year_min,
+                year_max
+            ).transform_calculate(
+                ydim="axis_mode === 'hour_month' || axis_mode === 'year_month' ? datum.MONTH_NAME : toNumber(datum.YEAR)"
+            ).mark_bar(opacity=0).encode(
+                y=alt.Y('ydim:O', title=None, sort=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        axis=alt.Axis(title=None, ticks=False, grid=False, labels=True)),
+                x=alt.value(5)
+            ).properties(
+                width=50,
+                height=300
+            )
+
+            # ----- Spacer (for Top Row Offset) -----
+            spacer = alt.Chart(pd.DataFrame({'x': [0], 'y': [0]})).mark_point(opacity=0).encode(
+                x=alt.X('x:Q', axis=alt.Axis(title=None, labels=False, ticks=False, grid=False)),
+                y=alt.Y('y:Q', axis=alt.Axis(title=None, labels=False, ticks=False, grid=False))
+            ).properties(
+                width=80,  # Match bar_left width
+                height=80  # Match bar_top height
+            )
+
+            # ----- Compose Layout with Offset -----
+            top_row = alt.hconcat(
+                spacer,
+                bar_top,
+                spacing=5
+            )
+
+            bottom_row = alt.hconcat(
+                bar_left,
+                heatmap,
+                bar_right_labels,
+                spacing=5
+            ).resolve_scale(color='independent')
+
+            layout = alt.vconcat(
+                top_row,
+                bottom_row,
+                spacing=5
+            ).resolve_scale(color='independent')
+
+            # ----- Apply Final Config -----
+            full_layout = layout.configure_axis(
+                grid=False,
+                domain=False
+            ).configure_view(
+                stroke=None
+            ).configure_title(
+                fontSize=24,
+                anchor='middle',
+                font='Arial',
+                color='black'
+            ).properties(
+                title="When do tornadoes occur? What is their effect?"
+            )
+
+            st.altair_chart(full_layout, use_container_width=False)
+
+            # Footer
+            st.markdown("---")
+            st.caption("Data: NOAA Storm Events | Interactive Dashboard built with Streamlit & Altair")
