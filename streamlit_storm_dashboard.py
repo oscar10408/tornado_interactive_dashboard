@@ -68,7 +68,7 @@ def load_2024_data():
 def load_all_years_data():
     dfs = []
     for year in range(2000, 2002):
-        pattern = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
+        pattern = os.path.join(os.path.dirname(__file__), 'data/StormEvents_details-ftp_v1.0_d2024_c20250401_chunk_*.csv')
         files = sorted(glob.glob(pattern))
 
         for file in files:
