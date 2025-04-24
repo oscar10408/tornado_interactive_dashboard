@@ -154,8 +154,8 @@ st.altair_chart(final_chart, use_container_width=True)
 
 def load_multi_year_data():
     dfs = []
-    for year in range(2000, 2025):
-        path = f"StormEvents_details-ftp_v1.0_d{year}_c20250401.csv"
+    for year in range(2000, 2002):
+        path = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
         try:
             df_year = pd.read_csv(path, on_bad_lines='skip', engine='python')
             df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
