@@ -189,75 +189,141 @@ if view_mode == '2024 State Analysis':
 
 # ========== VIEW 2: MULTI-YEAR HEATMAP ==========
 else:
+    @st.cache_data
+    def load_all_years_data():
+        dfs = []
+        for year in range(2000, 2025):  # Extended to 2024 to match data availability
+            pattern = f"data/StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv"
+            files = sorted(glob.glob(pattern))
+            if not files:
+                st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
+                continue
+
+            for file in files:
+                try:
+                    df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
+                    if 'TOR_F_SCALE' not in df_year.columns:
+                        st.sidebar.warning(f"⚠️ 'TOR_F_SCALE' column missing in {file}")
+                        continue
+                    if 'BEGIN_TIME' not in df_year.columns:
+                        st.sidebar.warning(f"⚠️ 'BEGIN_TIME' column missing in {file}")
+                        continue
+                    df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
+                    dfs.append(df_year)
+                    st.write(f"Loaded {file} with {len(df_year)} rows.")
+                except Exception as e:
+                    st.sidebar.error(f"❌ Error reading {file}: {e}")
+
+        if not dfs:
+            st.error("⚠️ No data files loaded. Please check the data directory and file patterns.")
+            return pd.DataFrame()
+
+        df = pd.concat(dfs, ignore_index=True)
+        return df
+
     df = load_all_years_data()
 
-    # Time parsing
-    df['BEGIN_TIME'] = df['BEGIN_TIME'].astype(str).str.zfill(4)
-    df['HOUR'] = df['BEGIN_TIME'].str[:2].astype(int)
-    df['YEAR'] = df['BEGIN_YEARMONTH'].astype(str).str[:4].astype(int)
-    df['MONTH'] = df['BEGIN_YEARMONTH'].astype(str).str[4:].astype(int)
-    df['MONTH_NAME'] = pd.to_datetime(df['MONTH'], format='%m').dt.strftime('%b')
-    df['MONTH_NAME'] = pd.Categorical(df['MONTH_NAME'],
-                                      categories=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                                      ordered=True)
+    if df.empty:
+        st.error("No data available to display the heatmap. Please ensure data files are correctly placed in the 'data' directory.")
+    else:
+        # Verify required columns
+        required_columns = ['BEGIN_TIME', 'BEGIN_YEARMONTH', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES_INDIRECT', 'INJURIES_DIRECT', 'DEATHS_INDIRECT', 'DEATHS_DIRECT', 'EVENT_ID']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            st.error(f"Missing required columns: {missing_columns}. Cannot generate heatmap.")
+        else:
+            # Time parsing
+            df['BEGIN_TIME'] = df['BEGIN_TIME'].astype(str).str.zfill(4)
+            df['HOUR'] = df['BEGIN_TIME'].str[:2].astype(int)
+            df['YEAR'] = df['BEGIN_YEARMONTH'].astype(str).str[:4].astype(int)
+            df['MONTH'] = df['BEGIN_YEARMONTH'].astype(str).str[4:].astype(int)
+            df['MONTH_NAME'] = pd.to_datetime(df['MONTH'], format='%m').dt.strftime('%b')
+            df['MONTH_NAME'] = pd.Categorical(
+                df['MONTH_NAME'],
+                categories=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                ordered=True
+            )
 
-    # Clean up damage fields
-    def parse_damage(val):
-        try:
-            val = str(val).strip().upper()
-            if val.endswith("K"):
-                return float(val[:-1]) * 1e3
-            elif val.endswith("M"):
-                return float(val[:-1]) * 1e6
-            return float(val)
-        except:
-            return 0.0
+            # Clean up damage fields
+            def parse_damage(val):
+                try:
+                    val = str(val).strip().upper()
+                    if val.endswith("K"):
+                        return float(val[:-1]) * 1e3
+                    elif val.endswith("M"):
+                        return float(val[:-1]) * 1e6
+                    return float(val)
+                except:
+                    return 0.0
 
-    df["DAMAGE_PROPERTY_PARSED"] = df["DAMAGE_PROPERTY"].apply(parse_damage)
-    df["DAMAGE_CROPS_PARSED"] = df["DAMAGE_CROPS"].apply(parse_damage)
-    df["INJURIES"] = df["INJURIES_INDIRECT"] + df["INJURIES_DIRECT"]
-    df["DEATHS"] = df["DEATHS_INDIRECT"] + df["DEATHS_DIRECT"]
+            df["DAMAGE_PROPERTY_PARSED"] = df["DAMAGE_PROPERTY"].apply(parse_damage)
+            df["DAMAGE_CROPS_PARSED"] = df["DAMAGE_CROPS"].apply(parse_damage)
+            df["INJURIES"] = df["INJURIES_INDIRECT"] + df["INJURIES_DIRECT"]
+            df["DEATHS"] = df["DEATHS_INDIRECT"] + df["DEATHS_DIRECT"]
 
-    folded = df.groupby(['MONTH_NAME', 'HOUR', 'YEAR']).agg(
-        COUNT=('EVENT_ID', 'count'),
-        DAMAGE_PROPERTY=('DAMAGE_PROPERTY_PARSED', 'sum'),
-        DAMAGE_CROPS=('DAMAGE_CROPS_PARSED', 'sum'),
-        INJURIES=('INJURIES', 'sum'),
-        DEATHS=('DEATHS', 'sum')
-    ).reset_index().melt(
-        id_vars=['MONTH_NAME', 'HOUR', 'YEAR'],
-        value_vars=['COUNT', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES', 'DEATHS'],
-        var_name='metric',
-        value_name='value'
-    )
+            # Fold the data
+            folded = df.groupby(['MONTH_NAME', 'HOUR', 'YEAR']).agg(
+                COUNT=('EVENT_ID', 'count'),
+                DAMAGE_PROPERTY=('DAMAGE_PROPERTY_PARSED', 'sum'),
+                DAMAGE_CROPS=('DAMAGE_CROPS_PARSED', 'sum'),
+                INJURIES=('INJURIES', 'sum'),
+                DEATHS=('DEATHS', 'sum')
+            ).reset_index().melt(
+                id_vars=['MONTH_NAME', 'HOUR', 'YEAR'],
+                value_vars=['COUNT', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES', 'DEATHS'],
+                var_name='metric',
+                value_name='value'
+            )
 
-    # Interactions
-    metric = st.selectbox("Select Metric", ['COUNT', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES', 'DEATHS'])
-    axis_mode = st.selectbox("Axis Mode", ['hour_month', 'hour_year', 'year_month'])
-    year_range = st.slider("Year Range", 2000, 2024, (2005, 2024))
+            # Sidebar controls for heatmap
+            st.sidebar.header("Heatmap Settings")
+            metric = st.sidebar.selectbox(
+                "Select Metric",
+                ['COUNT', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES', 'DEATHS'],
+                format_func=lambda x: {
+                    'COUNT': 'Number of occurrences',
+                    'DAMAGE_PROPERTY': 'Property Damage',
+                    'DAMAGE_CROPS': 'Crop Damage',
+                    'INJURIES': 'Injuries',
+                    'DEATHS': 'Deaths'
+                }[x]
+            )
+            axis_mode = st.sidebar.selectbox(
+                "Axis Mode",
+                ['hour_month', 'hour_year', 'year_month'],
+                format_func=lambda x: {
+                    'hour_month': 'Hour vs Month',
+                    'hour_year': 'Hour vs Year',
+                    'year_month': 'Year vs Month'
+                }[x]
+            )
+            year_range = st.sidebar.slider("Year Range", min_value=2000, max_value=2024, value=(2000, 2024))
 
-    folded = folded[folded['metric'] == metric]
-    folded = folded[(folded['YEAR'] >= year_range[0]) & (folded['YEAR'] <= year_range[1])]
+            # Filter data based on selections
+            folded = folded[folded['metric'] == metric]
+            folded = folded[(folded['YEAR'] >= year_range[0]) & (folded['YEAR'] <= year_range[1])]
 
-    xdim = folded['HOUR'] if 'hour' in axis_mode else folded['YEAR']
-    ydim = folded['MONTH_NAME'] if 'month' in axis_mode else folded['YEAR']
+            # Create heatmap
+            heatmap = alt.Chart(folded).transform_calculate(
+                xdim=f"toNumber(datum.HOUR)" if 'hour' in axis_mode else "datum.YEAR",
+                ydim=f"datum.MONTH_NAME" if 'month' in axis_mode else "toNumber(datum.YEAR)"
+            ).transform_aggregate(
+                value='sum(value)', groupby=['xdim', 'ydim']
+            ).mark_rect().encode(
+                x=alt.X('xdim:O', title=None),
+                y=alt.Y('ydim:O', title=None, sort=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] if 'month' in axis_mode else None),
+                color=alt.Color('value:Q', scale=alt.Scale(scheme='blues'), title="Metric Value"),
+                tooltip=[
+                    alt.Tooltip('xdim:O', title='X'),
+                    alt.Tooltip('ydim:O', title='Y'),
+                    alt.Tooltip('value:Q', title='Value')
+                ]
+            ).properties(
+                width=800,
+                height=600
+            )
 
-    heatmap = alt.Chart(folded).transform_calculate(
-        xdim="toNumber(datum.HOUR)" if 'hour' in axis_mode else "datum.YEAR",
-        ydim="datum.MONTH_NAME" if 'month' in axis_mode else "toNumber(datum.YEAR)"
-    ).transform_aggregate(
-        value='sum(value)', groupby=['xdim', 'ydim']
-    ).mark_rect().encode(
-        x=alt.X('xdim:O', title=None),
-        y=alt.Y('ydim:O', title=None),
-        color=alt.Color('value:Q', scale=alt.Scale(scheme='blues')),
-        tooltip=['xdim:O', 'ydim:O', 'value:Q']
-    ).properties(width=800, height=600)
-
-    # Heatmap centered on the page
-    col1, col2, col3 = st.columns([1, 2, 1])
-
-    with col2:
-        with st.container():
-            st.altair_chart(heatmap, use_container_width=False)
+            # Center the heatmap
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.altair_chart(heatmap, use_container_width=False)
