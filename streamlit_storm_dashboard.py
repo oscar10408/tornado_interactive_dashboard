@@ -179,19 +179,19 @@ if view_mode == '2024 State Analysis':
     
     """)
 
-# Load data
-df = load_comparison_data()
-
-if not df.empty:
-    # Convert DAMAGE_PROPERTY and DAMAGE_CROPS to numeric
-    def convert_damage(value):
-        if pd.isnull(value) or value in ['0.00K', 0]:
-            return 0
-        scale = {'K': 1e3, 'M': 1e6, 'B': 1e9}
-        try:
-            return float(value[:-1]) * scale[value[-1]]
-        except:
-            return 0
+    # Load data
+    df = load_comparison_data()
+    
+    if not df.empty:
+        # Convert DAMAGE_PROPERTY and DAMAGE_CROPS to numeric
+        def convert_damage(value):
+            if pd.isnull(value) or value in ['0.00K', 0]:
+                return 0
+            scale = {'K': 1e3, 'M': 1e6, 'B': 1e9}
+            try:
+                return float(value[:-1]) * scale[value[-1]]
+            except:
+                return 0
 
     df['DAMAGE_PROPERTY_NUM'] = df['DAMAGE_PROPERTY'].apply(convert_damage)
     df['DAMAGE_CROPS_NUM'] = df['DAMAGE_CROPS'].apply(convert_damage)
