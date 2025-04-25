@@ -30,33 +30,6 @@ st.markdown("---")
 
 
 @st.cache_data
-def load_2024_data():
-    file_path = os.path.join(os.path.dirname(__file__), 'data/StormEvents_details-ftp_v1.0_d2024_c20250401_chunk_1.csv')
-    if os.path.exists(file_path):
-        df = pd.read_csv(file_path, encoding='latin1')
-        df = df[~df['TOR_F_SCALE'].isna()].copy()
-
-        # Convert F-scale to numeric intensity
-        df['intensity'] = df['TOR_F_SCALE'].str.extract('(\d+)').astype(float)
-
-        # Parse date with correct format
-        df['date'] = pd.to_datetime(df['BEGIN_DATE_TIME'], format='%d-%b-%y %H:%M:%S', errors='coerce')
-        df['month'] = df['date'].dt.month
-
-        # Create mapping from state names to FIPS codes
-        state_name_to_fips = {state.name.upper(): int(state.fips) for state in us.states.STATES}
-        df['STATE_FIPS'] = df['STATE'].map(state_name_to_fips)
-
-        # Show warning in sidebar if any states couldn't be mapped
-        unmapped_states = df[df['STATE_FIPS'].isna()]['STATE'].unique()
-        if len(unmapped_states) > 0:
-            st.sidebar.warning(f"⚠️ Unmapped states found: {list(unmapped_states)}")
-
-        return df
-    else:
-        st.error("❌ Data file not found.")
-        return pd.DataFrame()
-
 def load_all_years_data():
     dfs = []
     for year in range(2000, 2002):  # Extended to 2024 to match data availability
@@ -168,15 +141,27 @@ if view_mode == '2024 State Analysis':
 
     # --- MAP SECTION ---
     st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
-    
     st.markdown("""
-    #### 📍 How to Use This View
-    - Select a **year** and **state** using the sidebar
-    - View state-level tornado **frequency** and **average intensity**
-    - Use interactive charts to explore monthly trends, size patterns, and scale distributions
+    ## 📘 Dashboard Guide
+    
+    Welcome to the Tornado Tracker Dashboard — an interactive data exploration tool that reveals patterns in U.S. tornado activity.
+    
+    ### 🔍 How to Use
+    - Use the **sidebar** to select a specific **year** and **state**
+    - Hover over visualizations to view detailed statistics
+    - Explore monthly, geographic, and scale-based patterns
+    
+    Gray areas on the U.S. map indicate **no recorded tornadoes** in that state for the selected year.
     """)
-
+    
     st.subheader(f"1️⃣ Geographic Distribution – {selected_state}, {selected_year}")
+    st.markdown("""
+    This map shows the number of tornadoes per state. Darker red shades indicate higher counts. Hover over a state to view:
+    - **Total tornadoes**
+    - **Average intensity** (based on EF scale)
+    
+    🕵️‍♂️ **Tip**: Gray areas had **zero tornadoes** during the selected year.
+    """)
 
     states_geo = alt.topo_feature(data.us_10m.url, 'states')
 
@@ -200,6 +185,22 @@ if view_mode == '2024 State Analysis':
 
     st.altair_chart(map_chart, use_container_width=True)
 
+    st.markdown("""
+    ## 🌪️ Tornado Impacts Across Key Regions
+    
+    Tornadoes cause devastating impacts across many U.S. regions. In 2024, several areas were particularly affected:
+    
+    ### ⚠️ Areas of Significant Tornado Activity:
+    - **Oklahoma** experienced some of the highest tornado activity nationwide, with numerous strong and long-tracked tornadoes causing damage across both rural and urban communities.
+    - **Illinois** also faced an unusually active season. Tornadoes struck parts of the state that are typically vulnerable, affecting towns, farmland, and suburbs alike.
+    - **Miami and parts of southern Florida** recorded several tornado events, mainly weaker tornadoes (EF0–EF1), often connected to tropical weather systems. Even lower-rated tornadoes can cause serious damage, especially in densely populated areas.
+    
+    ### 🏛️ Impact Across the Midwest
+    The **Midwest region as a whole** — including states like Missouri, Kansas, and Iowa — continued to face heightened tornado risks. This reflects ongoing patterns where warm, moist air from the Gulf meets cold, dry air from Canada, creating the perfect conditions for severe storms.
+    
+    🔎 Use the interactive maps and charts above to explore how tornado frequency and intensity varied across states and months.
+    """)
+
 
     # Filtered Data
     def filter_state(df, selected_state):
@@ -207,6 +208,15 @@ if view_mode == '2024 State Analysis':
 
     # --- Monthly Trend Chart ---
     st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
+    st.markdown("""
+    This chart shows how tornado **frequency** and **intensity** change throughout the year.
+    
+    - **Bars** = Number of tornadoes per month
+    - **Orange line** = Average tornado intensity (EF scale)
+    
+    Use the brush tool to highlight specific months!
+    """)
+
     df_trend = filter_state(df, selected_state)
     brush = alt.selection_interval(encodings=["x"])
 
@@ -227,6 +237,15 @@ if view_mode == '2024 State Analysis':
 
     # --- Scatter Chart ---
     st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
+    st.markdown("""
+    Each dot represents a tornado's **path length** and **width**.
+    
+    - **Orange**: Tornadoes from the selected state
+    - **Gray**: All other tornadoes
+    
+    Use this to spot unusually large or narrow tornadoes!
+    """)
+
     scatter_base = alt.Chart(df).mark_circle(size=60).encode(
         x="TOR_LENGTH:Q",
         y="TOR_WIDTH:Q",
@@ -242,6 +261,17 @@ if view_mode == '2024 State Analysis':
 
     # --- Scale Bar Chart ---
     st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
+    st.markdown("""
+    The Fujita (EF) scale classifies tornadoes by wind damage:
+    
+    - **EF0–EF1**: Weak (light to moderate damage)
+    - **EF2–EF3**: Strong (considerable damage)
+    - **EF4–EF5**: Violent (devastating to incredible damage)
+    - **EFU**: Unrated / Unknown
+    
+    This bar chart shows how tornadoes in the selected state are distributed by EF scale.
+    """)
+
     selected_state_scale = st.selectbox("Select State for Fujita Scale Bar Chart:", ["All States"] + all_states)
 
     df_scale = filter_state(df, selected_state)
