@@ -101,7 +101,7 @@ def load_data_by_year(year):
     files = sorted(glob.glob(pattern))
     if not files:
         st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
-        continue
+        pass
 
     for file in files:
         try:
@@ -124,6 +124,7 @@ def load_data_by_year(year):
 
     df = pd.concat(dfs, ignore_index=True)
     return df
+    
 # ========== SIDEBAR ==========
 st.sidebar.title("Tornado Dashboard Settings")
 view_mode = st.sidebar.radio("Select View", ['2024 State Analysis', 'Multi-Year Heatmap'])
