@@ -148,8 +148,10 @@ if view_mode == '2024 State Analysis':
     
     """)
 
-    df = load_all_years_data()
+# Load data
+df = load_all_years_data()
 
+if not df.empty:
     # Convert DAMAGE_PROPERTY and DAMAGE_CROPS to numeric
     def convert_damage(value):
         if pd.isnull(value) or value in ['0.00K', 0]:
@@ -160,72 +162,66 @@ if view_mode == '2024 State Analysis':
         except:
             return 0
 
-    # Create total damage property and damage crops columns
     df['DAMAGE_PROPERTY_NUM'] = df['DAMAGE_PROPERTY'].apply(convert_damage)
     df['DAMAGE_CROPS_NUM'] = df['DAMAGE_CROPS'].apply(convert_damage)
-    
-    # Create total injuries and deaths columns
+
     df['TOTAL_INJURIES'] = df['INJURIES_DIRECT'] + df['INJURIES_INDIRECT']
     df['TOTAL_DEATHS'] = df['DEATHS_DIRECT'] + df['DEATHS_INDIRECT']
-    
-    # Aggregate totals
+
+    # Aggregate
     agg_df = df.groupby('EVENT_TYPE').agg({
         'TOTAL_INJURIES': 'sum',
         'TOTAL_DEATHS': 'sum',
         'DAMAGE_PROPERTY_NUM': 'sum',
         'DAMAGE_CROPS_NUM': 'sum'
     }).reset_index()
-    
-    # Function to generate each chart
+
+    # Chart function
     def make_chart(df, value_col, title, color):
-    
         top5 = df.nlargest(5, value_col).copy()
-    
-        # Reorder
         top5['EVENT_TYPE'] = pd.Categorical(
             top5['EVENT_TYPE'],
             categories=top5.sort_values(value_col, ascending=False)['EVENT_TYPE'],
             ordered=True
         )
-    
+
         return alt.Chart(top5).mark_bar(size=20).encode(
             y=alt.Y('EVENT_TYPE:N', sort=None, title=None),
             x=alt.X(f'{value_col}:Q', title=None),
-            # tooltip=['EVENT_TYPE:N', f'{value_col}:Q'],
             color=alt.value(color),
             opacity=alt.condition(
                 alt.datum.EVENT_TYPE == 'Tornado',
-                alt.value(1.0),   # full opacity for Tornado
-                alt.value(0.5)    # faded for others
+                alt.value(1.0),
+                alt.value(0.5)
             )
         ).properties(
             width=300,
             height=150,
             title=title
         )
-    
-    # Create each of the 4 charts
+
     injuries_chart = make_chart(agg_df, 'TOTAL_INJURIES', 'Injuries', '#e15759')
     deaths_chart = make_chart(agg_df, 'TOTAL_DEATHS', 'Deaths', '#4e79a7')
     prop_damage_chart = make_chart(agg_df, 'DAMAGE_PROPERTY_NUM', 'Property Damage', '#f28e2b')
     crop_damage_chart = make_chart(agg_df, 'DAMAGE_CROPS_NUM', 'Crop Damage', '#76b7b2')
-    
-    # Arrange in 2x2 grid
+
+    # 2x2 grid
     comparison_chart = (injuries_chart | deaths_chart) & (prop_damage_chart | crop_damage_chart)
-    
-    # Add overall title and subtitle
+
+    # Titles
     comparison_chart = comparison_chart.properties(
         title={
             "text": "Top Storm Events for Injuries, Deaths, and Damage",
             "subtitle": ["United States 2000–2024"],
-            "anchor": "start",  # Left align
-            "fontSize": 26,     # Larger main title
-            "subtitleFontSize": 18,  # Smaller subtitle
+            "anchor": "start",
+            "fontSize": 26,
+            "subtitleFontSize": 18,
             "font": "Sans-Serif",
             "subtitleFont": "Sans-Serif"
         }
     )
-    
+
+    # Show
     st.altair_chart(comparison_chart, use_container_width=True)
     
     # --- MAP SECTION ---
