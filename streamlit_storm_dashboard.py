@@ -59,7 +59,7 @@ def load_2024_data():
 
 def load_all_years_data():
     dfs = []
-    for year in range(2000, 2025):  # Extended to 2024 to match data availability
+    for year in range(2000, 2002):  # Extended to 2024 to match data availability
         pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
         files = sorted(glob.glob(pattern))
         if not files:
@@ -265,15 +265,51 @@ else:
     if df.empty:
         st.error("No data available to display the heatmap. Please ensure data files are correctly placed in the 'data' directory.")
     else:
-        # Verify required columns
+        st.markdown('---')
+
+        st.title("🌪️ When do tornadoes occur?")
+        st.markdown("""
+        #### ⚠️ The 2011 Super Outbreak 
+        The year 2011 stands out as one of the most catastrophic tornado seasons in U.S. history, marked by an extraordinary level of tornado activity and devastation. Central to this was the April 25–28 Super Outbreak, which unleashed 360 tornadoes across 21 states, including four EF5 tornadoes—the highest rating on the Enhanced Fujita scale. On April 27 alone, a record-shattering 219 tornadoes were confirmed, making it the most active tornado day ever recorded. The human toll was staggering, with 324 tornado-related deaths, 238 of which occurred in Alabama alone, and an additional 24 fatalities caused by related thunderstorm events. April 2011 saw a total of 758 tornadoes, making it the single most active tornado month in U.S. history. This unparalleled outbreak not only redefined the scale of tornado disasters but also revealed how a short window of extreme weather can account for a significant portion of yearly destruction and loss of life.
+        
+        Building on lessons from historic events like 2011, it becomes clear that uncovering temporal and seasonal tornado patterns is crucial for both understanding and preparedness. Tornadoes are among the most destructive natural phenomena, and their behavior—when examined over time and across impact metrics—can provide key insights into risk. This interactive visualization allows users to explore tornado occurrences and their effects across time, seasonality, and different impact dimensions, unlocking patterns that are often hidden in raw data.
+
+        """)
+
+        st.markdown("---")
 
         st.markdown("""
-        #### 📊 How to Use This View
-        - Use the sidebar to choose a **metric**, **axis**, and **year range**
-        - The central heatmap shows when and how strongly tornadoes occurred across time
-        - Hover over heatmap cells or bar charts for detailed values
+        #### 📊 How to Use the Heatmap
+        This interactive heatmap helps you explore when tornadoes happen, how intense they are, and how their impact varies across different timeframes and dimensions. Here's how you can navigate it:
+        
+        - 1️⃣ Select Time Duration (Which years do you want to analyze):
+             Use the year range slider to focus on a specific period—from 2000 to 2024. Whether you're interested in a single year or long-term trends, this control lets you zoom in or out as needed.
+
+        - 2️⃣ Switch Between Time Axes (Choose how you want to explore time):
+            - Hour vs. Month: When during the day do tornadoes most commonly occur in each month?
+            - Year vs. Month: How has tornado activity changed across months over the years?
+            - Hour vs. Year: Are tornadoes happening at different times of day in recent years?
+
+        - 3️⃣ Choose a Metric (What kind of impact do you want to examine):
+            Toggle between: Number of tornadoes, Injuries, Deaths, Property Damage, and Crop damage.
+
+        - 4️⃣ Hover over heatmap cells or bar charts for detailed values
+                    
+        These tools allow you to uncover patterns that go beyond what’s visible in static charts. Whether you're studying trends, investigating specific years, or simply exploring out of curiosity, the heatmap offers a flexible way to ask and answer deeper questions.
         """)
         
+        st.markdown("---")
+
+        st.markdown("""
+        #### 🔎 Questions You Might Want To Explore:
+        - Do tornadoes occur more often at night or in the afternoon?
+        - Has tornado damage increased in the last decade?
+        - Which month sees the most tornado-related deaths?
+        - What are the most dangerous hours across all years?
+        """)
+
+        st.markdown("---")
+
         required_columns = ['BEGIN_TIME', 'BEGIN_YEARMONTH', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES_INDIRECT', 'INJURIES_DIRECT', 'DEATHS_INDIRECT', 'DEATHS_DIRECT', 'EVENT_ID']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
