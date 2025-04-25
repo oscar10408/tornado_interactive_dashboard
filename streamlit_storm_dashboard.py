@@ -96,35 +96,42 @@ def load_all_years_data():
     return df
 
 def load_data_by_year(year):
-    dfs = []
-    pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
+    pattern = os.path.join('data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
     files = sorted(glob.glob(pattern))
-    if not files:
-        st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
-        pass
 
+    if not files:
+        st.warning(f"⚠️ No files found for year {year}")
+        return pd.DataFrame()
+    dfs = []
     for file in files:
         try:
-            df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
-            if 'TOR_F_SCALE' not in df_year.columns:
-                st.sidebar.warning(f"⚠️ 'TOR_F_SCALE' column missing in {file}")
+            df = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
+            if 'TOR_F_SCALE' not in df.columns or 'BEGIN_DATE_TIME' not in df.columns:
+                st.sidebar.warning(f"⚠️ Missing expected columns in {os.path.basename(file)}")
                 continue
-            if 'BEGIN_TIME' not in df_year.columns:
-                st.sidebar.warning(f"⚠️ 'BEGIN_TIME' column missing in {file}")
-                continue
-            df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
-            dfs.append(df_year)
-            # st.write(f"Loaded {file} with {len(df_year)} rows.")
+            dfs.append(df)
         except Exception as e:
-            st.sidebar.error(f"❌ Error reading {file}: {e}")
+            st.sidebar.error(f"❌ Error reading {os.path.basename(file)}: {e}")
 
     if not dfs:
-        st.error("⚠️ No data files loaded. Please check the data directory and file patterns.")
+        st.error(f"⚠️ No valid data loaded for year {year}")
         return pd.DataFrame()
 
     df = pd.concat(dfs, ignore_index=True)
-    return df
+
+    df = df[~df['TOR_F_SCALE'].isna()].copy()
+    df['intensity'] = df['TOR_F_SCALE'].str.extract('(\d+)').astype(float)
+    df['date'] = pd.to_datetime(df['BEGIN_DATE_TIME'], format='%d-%b-%y %H:%M:%S', errors='coerce')
+    df['month'] = df['date'].dt.month
     
+    state_name_to_fips = {state.name.upper(): int(state.fips) for state in us.states.STATES}
+    df['STATE_FIPS'] = df['STATE'].map(state_name_to_fips)
+
+    unmapped_states = df[df['STATE_FIPS'].isna()]['STATE'].unique()
+    if len(unmapped_states) > 0:
+        st.sidebar.warning(f"⚠️ Unmapped states found in year {year}: {list(unmapped_states)}")
+
+    return df
 # ========== SIDEBAR ==========
 st.sidebar.title("Tornado Dashboard Settings")
 view_mode = st.sidebar.radio("Select View", ['2024 State Analysis', 'Multi-Year Heatmap'])
