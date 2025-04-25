@@ -272,8 +272,6 @@ if view_mode == '2024 State Analysis':
     This bar chart shows how tornadoes in the selected state are distributed by EF scale.
     """)
 
-    selected_state_scale = st.selectbox("Select State for Fujita Scale Bar Chart:", ["All States"] + all_states)
-
     df_scale = filter_state(df, selected_state)
 
     scale_chart = alt.Chart(df_scale).mark_bar().encode(
