@@ -96,40 +96,38 @@ def load_all_years_data():
     return df
 
 def load_data_by_year(year):
-    pattern = os.path.join('data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
+    pattern = os.path.join("data", f"StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv")
     files = sorted(glob.glob(pattern))
 
     if not files:
         st.warning(f"⚠️ No files found for year {year}")
         return pd.DataFrame()
+
     dfs = []
     for file in files:
         try:
-            df = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
+            df = pd.read_csv(file, on_bad_lines='skip', encoding='latin1')
             if 'TOR_F_SCALE' not in df.columns or 'BEGIN_DATE_TIME' not in df.columns:
-                st.sidebar.warning(f"⚠️ Missing expected columns in {os.path.basename(file)}")
+                st.sidebar.warning(f"Missing expected columns in: {os.path.basename(file)}")
                 continue
             dfs.append(df)
         except Exception as e:
-            st.sidebar.error(f"❌ Error reading {os.path.basename(file)}: {e}")
+            st.sidebar.error(f"❌ Could not read {os.path.basename(file)}: {e}")
 
     if not dfs:
-        st.error(f"⚠️ No valid data loaded for year {year}")
         return pd.DataFrame()
 
     df = pd.concat(dfs, ignore_index=True)
-
     df = df[~df['TOR_F_SCALE'].isna()].copy()
     df['intensity'] = df['TOR_F_SCALE'].str.extract('(\d+)').astype(float)
     df['date'] = pd.to_datetime(df['BEGIN_DATE_TIME'], format='%d-%b-%y %H:%M:%S', errors='coerce')
     df['month'] = df['date'].dt.month
-    
     state_name_to_fips = {state.name.upper(): int(state.fips) for state in us.states.STATES}
     df['STATE_FIPS'] = df['STATE'].map(state_name_to_fips)
 
     unmapped_states = df[df['STATE_FIPS'].isna()]['STATE'].unique()
     if len(unmapped_states) > 0:
-        st.sidebar.warning(f"⚠️ Unmapped states found in year {year}: {list(unmapped_states)}")
+        st.sidebar.warning(f"⚠️ Unmapped states found: {list(unmapped_states)}")
 
     return df
 # ========== SIDEBAR ==========
