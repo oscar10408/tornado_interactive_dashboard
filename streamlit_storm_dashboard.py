@@ -220,15 +220,15 @@ if view_mode == '2024 State Analysis':
     brush = alt.selection_interval(encodings=["x"])
 
     intensity = alt.Chart(df_trend).mark_line(point=True).encode(
-        x="month:O",
-        y="average(intensity):Q",
+        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),  # Rotate x-axis labels horizontal
+        y=alt.Y("average(intensity):Q", axis=alt.Axis(titleColor="orange")),  # Y-axis title color
         color=alt.value("orange"),
         opacity=alt.condition(brush, alt.value(1), alt.value(0.3))
     ).add_params(brush)
 
     count = alt.Chart(df_trend).mark_bar(opacity=0.5).encode(
-        x="month:O",
-        y="count():Q",
+        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),  # Same horizontal x labels
+        y=alt.Y("count():Q", axis=alt.Axis(titleColor="steelblue")),  # Y-axis title color
         color=alt.value("steelblue")
     )
 
@@ -239,8 +239,8 @@ if view_mode == '2024 State Analysis':
     st.markdown("""
     Each dot represents a tornado's **path length** and **width**.
     
-    - **Orange**: Tornadoes from the selected state
-    - **Gray**: All other tornadoes
+    - **Orange**: Tornadoes from the selected state (if selected in sidebar)
+    - **Gray**: All other tornadoes in the U.S. in the selected year
     
     Use this to spot unusually large or narrow tornadoes!
     """)
