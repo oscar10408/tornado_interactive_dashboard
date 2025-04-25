@@ -168,8 +168,7 @@ if view_mode == '2024 State Analysis':
 
     # --- MAP SECTION ---
     st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
-    st.subheader(f"1️⃣ Geographic Distribution – {selected_state}, {selected_year}")
-
+    
     st.markdown("""
     #### 📍 How to Use This View
     - Select a **year** and **state** using the sidebar
@@ -177,6 +176,7 @@ if view_mode == '2024 State Analysis':
     - Use interactive charts to explore monthly trends, size patterns, and scale distributions
     """)
 
+    st.subheader(f"1️⃣ Geographic Distribution – {selected_state}, {selected_year}")
 
     states_geo = alt.topo_feature(data.us_10m.url, 'states')
 
