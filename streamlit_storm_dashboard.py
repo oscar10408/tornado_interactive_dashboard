@@ -16,21 +16,14 @@ alt.data_transformers.disable_max_rows()
 st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
 
 st.markdown("""
-## Explore the Power and Patterns of Nature's Most Violent Storms
+### 🌪️ Welcome to the Tornado Tracker
 
-Welcome to the Tornado Tracker dashboard, your interactive portal into the fascinating and destructive world of tornadoes across the United States. This tool transforms complex meteorological data into intuitive visualizations, allowing you to:
+This dashboard offers two powerful views to explore tornado patterns across the U.S.:
 
-- **Discover regional tornado hotspots** across the American landscape
-- **Analyze seasonal patterns** that reveal when different states face the highest risk
-- **Compare tornado characteristics** from mild EF0 events to devastating EF5 monsters
-- **Identify trends** that may reflect the changing climate's impact on severe weather
+- **📍 2024 State Analysis:** Drill down into specific states for a single year  
+- **📊 Multi-Year Heatmap:** Uncover broader patterns in tornado activity, damage, and casualties from 2000–2024
 
-Powered by the latest NOAA data from 2024, this dashboard combines data science with meteorological insights to create a comprehensive view of tornado activity.
-
-### How to Use This Dashboard
-👉 **Click on any state** in the map to filter all charts to that location  
-👉 **Brush across months** in the timeline to focus on specific time periods  
-👉 **Hover over elements** to reveal detailed information about individual data points
+Use the sidebar to switch views and explore different years, metrics, or regions.
 """)
 
 st.markdown("---")
@@ -127,7 +120,8 @@ def load_data_by_year(year):
 
     unmapped_states = df[df['STATE_FIPS'].isna()]['STATE'].unique()
     if len(unmapped_states) > 0:
-        st.sidebar.warning(f"⚠️ Unmapped states found: {list(unmapped_states)}")
+        st.sidebar.warning(f"⚠️ Unmapped states found: {list(unmapped_states)}\n"
+                           "ℹ️ *Note: This is likely due to missing data in the original NOAA dataset.*")
 
     return df
 # ========== SIDEBAR ==========
@@ -175,6 +169,14 @@ if view_mode == '2024 State Analysis':
     # --- MAP SECTION ---
     st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
     st.subheader(f"1️⃣ Geographic Distribution – {selected_state}, {selected_year}")
+
+    st.markdown("""
+    #### 📍 How to Use This View
+    - Select a **year** and **state** using the sidebar
+    - View state-level tornado **frequency** and **average intensity**
+    - Use interactive charts to explore monthly trends, size patterns, and scale distributions
+    """)
+
 
     states_geo = alt.topo_feature(data.us_10m.url, 'states')
 
@@ -264,6 +266,14 @@ else:
         st.error("No data available to display the heatmap. Please ensure data files are correctly placed in the 'data' directory.")
     else:
         # Verify required columns
+
+        st.markdown("""
+        #### 📊 How to Use This View
+        - Use the sidebar to choose a **metric**, **axis**, and **year range**
+        - The central heatmap shows when and how strongly tornadoes occurred across time
+        - Hover over heatmap cells or bar charts for detailed values
+        """)
+        
         required_columns = ['BEGIN_TIME', 'BEGIN_YEARMONTH', 'DAMAGE_PROPERTY', 'DAMAGE_CROPS', 'INJURIES_INDIRECT', 'INJURIES_DIRECT', 'DEATHS_INDIRECT', 'DEATHS_DIRECT', 'EVENT_ID']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
