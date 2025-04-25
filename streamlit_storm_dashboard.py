@@ -184,7 +184,13 @@ if view_mode == '2024 State Analysis':
 
     if not df_comparison.empty:
         def convert_damage(value):
-            # your function
+            if pd.isnull(value) or value in ['0.00K', 0]:
+                return 0
+            scale = {'K': 1e3, 'M': 1e6, 'B': 1e9}
+            try:
+                return float(value[:-1]) * scale[value[-1]]
+            except:
+                return 0
         df_comparison['DAMAGE_PROPERTY_NUM'] = df_comparison['DAMAGE_PROPERTY'].apply(convert_damage)
         df_comparison['DAMAGE_CROPS_NUM'] = df_comparison['DAMAGE_CROPS'].apply(convert_damage)
         df_comparison['TOTAL_INJURIES'] = df_comparison['INJURIES_DIRECT'] + df_comparison['INJURIES_INDIRECT']
