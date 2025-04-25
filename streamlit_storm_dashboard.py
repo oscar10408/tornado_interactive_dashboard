@@ -226,8 +226,6 @@ if view_mode == '2024 State Analysis':
         }
     )
     
-    comparison_chart
-
     st.altair_chart(comparison_chart, use_container_width=True)
     
     # --- MAP SECTION ---
