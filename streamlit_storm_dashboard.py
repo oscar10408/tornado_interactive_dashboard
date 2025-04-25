@@ -140,7 +140,7 @@ if view_mode == '2024 State Analysis':
     state_stats["avg_intensity"] = state_stats["avg_intensity"].fillna(0)
 
     # --- MAP SECTION ---
-    st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
+    # st.title("🌀 Tornado Tracker: Interactive Insights Across U.S. States")
     st.markdown("""
     ## 📘 Dashboard Guide
     
