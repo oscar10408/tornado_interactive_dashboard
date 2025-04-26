@@ -311,7 +311,8 @@ if view_mode == '2024 State Analysis':
 
     # Define color condition based on whether a state is selected
     if selected_state == "All States":
-        color = alt.Color("STATE:N", legend=None)  # normal coloring
+        color = alt.value("orange")
+        # color = alt.Color("orange", legend=None)  # normal coloring
     else:
         color = alt.condition(
             alt.datum.STATE == selected_state,
