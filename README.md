@@ -3,8 +3,30 @@
 Explore how tornado patterns and climate change have evolved across the United States over the past decades.  
 Built with **Streamlit** and **Altair**, this dashboard offers interactive visualizations across multiple dimensions: location, time, intensity, and environmental factors.
 
-[![Website Preview](preview.png)](https://si649-narrative-project.streamlit.app/)  
-🔗 [Live App Here](https://si649-narrative-project.streamlit.app/)
+🔗 [Live App Link](https://si649-narrative-project.streamlit.app/)
+
+---
+
+## 🌟 Project Preview
+
+### Interactive Tornado Tracker
+
+|  |  |  |
+|:---:|:---:|:---:|
+| ![](Image/preview_1.png) | ![](Image/preview_2.png) | ![](Image/preview_3.png) |
+| *Tornadoes by State (2024)* | *Monthly Tornado Trends* | *Tornado Intensity Distribution* |
+
+|  |  |  |
+|:---:|:---:|:---:|
+| ![](Image/preview_4.png) | ![](Image/preview_5.png) | ![](Image/preview_6.png) |
+| *Tornado Size Scatterplot* | *Multi-Year Tornado Heatmap* | *Hourly Tornado Occurrence* |
+
+### Climate vs Tornado Activity
+
+|  |
+|:---:|
+| ![](Image/preview_7.png) |
+| *Land Temperature vs Tornado Counts (1950–2024)* |
 
 ---
 
@@ -29,11 +51,3 @@ Investigate how rising land surface temperatures correlate with tornado activity
 - Observes positive correlation between temperature rise and tornado reports
 
 ---
-
-## 🗂️ Project Structure
-
-```bash
-├── data_split/                  # Pre-processed NOAA Storm Events and temperature data
-├── streamlit_storm_dashboard.py  # Main Streamlit app
-├── preview.png                   # Website preview image
-└── README.md                     # This file
