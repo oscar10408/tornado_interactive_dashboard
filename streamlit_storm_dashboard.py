@@ -284,7 +284,7 @@ if view_mode == '2024 State Analysis':
     # --- Scale Bar Chart ---
     st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
     st.markdown("""
-    The Fujita (EF) scale classifies tornadoes by wind damage:
+    The Enhanced Fujita (EF) scale classifies tornadoes by wind damage:
     
     - **EF0–EF1**: Weak (light to moderate damage)
     - **EF2–EF3**: Strong (considerable damage)
@@ -303,7 +303,7 @@ if view_mode == '2024 State Analysis':
                         legend=None,
                         scale = alt.Scale(
                             domain=['EF0', 'EF1', 'EF2', 'EF3', 'EF4', 'EFU'],
-                            range=['#FFFF00', '#FFA500', '#FF8000', '#FF4500', '#FF0000']
+                            range=['#FFE135', '#FFAB28', '#FF751B', '#FF3E0D', '#FF0800', '#D3D3D3']
                         )
         )
     ).properties(width=400, height=300)
