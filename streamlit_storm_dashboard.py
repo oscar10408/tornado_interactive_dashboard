@@ -107,10 +107,12 @@ if view_mode == '2024 State Analysis':
 
     # --- INTRO SECTION ---
     st.markdown("""
-    ## Intro
+    ## How do tornadoes compare with other storm events?
 
-    First off, let's take a look at how the destructive force of tornadoes compares to other storm events in the U.S. over time.
+    First off, let's take a look at how the destructive force of tornadoes compares with other storm events in the U.S., using the most recent data from 2024 as a snapshot of current annual trends.
     Data tracked on injuries, deaths, and damage to both property and crops can give us insight into this.
+
+    In the below graph, we can see that in 2024 tornadoes were, by far, the number 1 cause of injuries! They are also the 4th highest cause of property damage, and fall in the top 10 for both deaths (#6) and crop damage (#9) as well.
     
     """)
 
