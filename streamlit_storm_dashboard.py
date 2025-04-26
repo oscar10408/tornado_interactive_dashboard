@@ -250,14 +250,7 @@ if view_mode == '2024 State Analysis':
     ).add_params(brush)
 
     count = alt.Chart(df_trend).mark_bar(opacity=0.5).encode(
-        x=alt.X("month:O",
-                axis=alt.Axis(labelAngle=0, title="Month"),
-                scale=alt.Scale(
-                    domain=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],  # Data values
-                    range=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',   # Display labels
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-            )
-        ),
+        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),
         y=alt.Y("count():Q", axis=alt.Axis(titleColor="steelblue")),  # Y-axis title color
         color=alt.value("steelblue")
     )
