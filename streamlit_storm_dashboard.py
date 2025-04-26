@@ -100,7 +100,7 @@ def load_data_by_year(year):
 
 def load_comparison_data():
     dfs = []
-    for year in range(2000, 2002):  
+    for year in range(2000, 2025):  
         pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
         files = sorted(glob.glob(pattern))
         if not files:
