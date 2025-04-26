@@ -311,21 +311,19 @@ if view_mode == '2024 State Analysis':
 
     # Define color condition based on whether a state is selected
     if selected_state == "All States":
-        color = alt.value("orange"),
-        opacity = alt.value(0.7)
-        # color = alt.Color("orange", legend=None)  # normal coloring
+        color = alt.value("orange")
     else:
         color = alt.condition(
             alt.datum.STATE == selected_state,
             alt.value("orange"),
             alt.value("lightgray")
-        ),
-        opacity = alt.value(0.7)
-
+        )
+        
     scatter_base = alt.Chart(df).mark_circle(size=60).encode(
         x=alt.X("TOR_LENGTH:Q", title='Length'),
         y=alt.Y("TOR_WIDTH:Q", title='Width'),
         color=color,
+        opacity = alt.value(0.7),
         tooltip=["STATE", "TOR_LENGTH", "TOR_WIDTH", "TOR_F_SCALE"]
     ).properties(width=400, height=300)
 
