@@ -709,7 +709,7 @@ else:
         base = alt.Chart(climate_data).encode(
             x=alt.X('YEAR:O',
                     title=None,
-                    axis=alt.Axis(values=list(range(1950, 2030, 5))))
+                    axis=alt.Axis(values=list(range(1950, 2030, 5)),labelAlign='left', labelAngle=0)),
         )
 
         # 溫度 anomaly bars
