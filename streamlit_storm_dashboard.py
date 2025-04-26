@@ -744,12 +744,12 @@ else:
 
         # 溫度 anomaly bars
         pos_bar = base.mark_bar(color='lightblue').encode(
-            y=alt.Y('POS_ANOMALY:Q', scale=alt.Scale(domain=[-4,4]), title='Temp Anomaly (°C)'),
+            y=alt.Y('POS_ANOMALY:Q', scale=alt.Scale(domain=[-4,4]),  axis=alt.Axis(title='Temp Anomaly (°C)', titleColor='lightblue')),
             opacity=alt.value(0.5),
             tooltip=['YEAR','TEMP_ANOMALY']
         )
         neg_bar = base.mark_bar(color='lightblue').encode(
-            y=alt.Y('NEG_ANOMALY:Q', title='Temp Anomaly (°C)'),
+            y=alt.Y('NEG_ANOMALY:Q', axis=alt.Axis(title='Temp Anomaly (°C)', titleColor='lightblue')),
             opacity=alt.value(0.5),
             tooltip=['YEAR','TEMP_ANOMALY']
         )
