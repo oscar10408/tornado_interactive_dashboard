@@ -164,8 +164,7 @@ if view_mode == '2024 State Analysis':
     )
     state_stats["tornado_count"] = state_stats["tornado_count"].fillna(0)
     state_stats["avg_intensity"] = state_stats["avg_intensity"].fillna(0)
-    
-    
+
     # --- MAP SECTION ---
     st.markdown("""
     ## 📘 Dashboard Guide
@@ -189,6 +188,7 @@ if view_mode == '2024 State Analysis':
     """)
 
     states_geo = alt.topo_feature(data.us_10m.url, 'states')
+    
 
     map_chart = alt.Chart(states_geo).mark_geoshape().encode(
         color=alt.condition(
@@ -232,6 +232,7 @@ if view_mode == '2024 State Analysis':
         return df if selected_state == "All States" else df[df["STATE"] == selected_state]
 
     # --- Monthly Trend Chart ---
+
     st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
     st.markdown("""
     This chart shows how tornado **frequency** and **intensity** change throughout the year.
@@ -242,25 +243,27 @@ if view_mode == '2024 State Analysis':
     Use the brush tool to highlight specific months!
     """)
 
+    st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
     df_trend = filter_state(df, selected_state)
     brush = alt.selection_interval(encodings=["x"])
 
     intensity = alt.Chart(df_trend).mark_line(point=True).encode(
-        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),  # Rotate x-axis labels horizontal
-        y=alt.Y("average(intensity):Q", axis=alt.Axis(titleColor="orange")),  # Y-axis title color
+        x="month:O",
+        y="average(intensity):Q",
         color=alt.value("orange"),
         opacity=alt.condition(brush, alt.value(1), alt.value(0.3))
     ).add_params(brush)
 
     count = alt.Chart(df_trend).mark_bar(opacity=0.5).encode(
-        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),
-        y=alt.Y("count():Q", axis=alt.Axis(titleColor="steelblue")),  # Y-axis title color
+        x="month:O",
+        y="count():Q",
         color=alt.value("steelblue")
     )
 
     st.altair_chart((intensity + count).resolve_scale(y="independent").properties(width=800, height=250), use_container_width=True)
 
     # --- Scatter Chart ---
+
     st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
     st.markdown("""
     Each dot represents a tornado's **path length** and **width**.
@@ -271,9 +274,10 @@ if view_mode == '2024 State Analysis':
     Use this to spot unusually large or narrow tornadoes!
     """)
 
+    st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
     scatter_base = alt.Chart(df).mark_circle(size=60).encode(
-        x=alt.X("TOR_LENGTH:Q", title='Length'),
-        y=alt.Y("TOR_WIDTH:Q", title='Width'),
+        x="TOR_LENGTH:Q",
+        y="TOR_WIDTH:Q",
         color=alt.condition(
             alt.datum.STATE == selected_state,
             alt.value("orange"),
@@ -285,6 +289,7 @@ if view_mode == '2024 State Analysis':
     st.altair_chart(scatter_base, use_container_width=True)
 
     # --- Scale Bar Chart ---
+
     st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
     st.markdown("""
     The Enhanced Fujita (EF) scale classifies tornadoes by wind damage:
@@ -297,10 +302,14 @@ if view_mode == '2024 State Analysis':
     This bar chart shows how tornadoes in the selected state are distributed by EF scale.
     """)
 
+
+    st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
+    # selected_state_scale = st.selectbox("Select State for Fujita Scale Bar Chart:", ["All States"] + all_states)
+
     df_scale = filter_state(df, selected_state)
 
     scale_chart = alt.Chart(df_scale).mark_bar().encode(
-        x=alt.X("TOR_F_SCALE:N", title='Scale', axis=alt.Axis(labelAngle=0)), # Rotate x-axis labels horizontal
+        x="TOR_F_SCALE:N",
         y="count():Q",
         color=alt.Color("TOR_F_SCALE:N",
                         legend=None,
@@ -316,7 +325,7 @@ if view_mode == '2024 State Analysis':
     # Footer
     st.markdown("---")
     st.caption("Data: NOAA Storm Events 2024 | Interactive Dashboard built with Streamlit & Altair")
-
+    
 # ========== VIEW 2: MULTI-YEAR HEATMAP ==========
 else:
     df = load_all_years_data()
