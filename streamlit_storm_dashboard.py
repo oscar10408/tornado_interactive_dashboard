@@ -112,12 +112,18 @@ if view_mode == '2024 State Analysis':
     First off, let's take a look at how the destructive force of tornadoes compares with other storm events in the U.S., using the most recent data from 2024 as a snapshot of current annual trends.
     Data tracked on injuries, deaths, and damage to both property and crops can give us insight into this.
 
-    In the below graph, we can see that in 2024 tornadoes were, by far, the number 1 cause of injuries! They are also the 4th highest cause of property damage, and fall in the top 10 for both deaths (#6) and crop damage (#9) as well.
+    In the below graph, we can see that in 2024 tornadoes were, by far, the number 1 cause of injuries! They are also the 4th highest cause of property damage, and fall in the top 10 for both deaths (6th) and crop damage (9th) as well.
+    Looking across multiple types of impact—injuries, deaths, and economic damage—gives a fuller picture of how tornadoes affect communities beyond just headline-grabbing destruction.
     
+    <br>
     """)
 
     # Display static image
     st.image('comparison_chart.svg', use_container_width=True)
+
+     st.markdown("""
+    First 
+    """)
 
     
     # --- MAP SECTION SETUP ---
