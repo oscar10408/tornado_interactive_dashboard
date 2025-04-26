@@ -363,13 +363,11 @@ if view_mode == '2024 State Analysis':
 # ========== VIEW 2: MULTI-YEAR HEATMAP ==========
 else:
     # HEATMAP
-    st.markdown('---')
     df = load_all_years_data()
 
     if df.empty:
         st.error("No data available to display the heatmap. Please ensure data files are correctly placed in the 'data' directory.")
     else:
-        st.markdown('---')
 
         st.title("🌪️ When do tornadoes occur?")
         st.markdown("""
