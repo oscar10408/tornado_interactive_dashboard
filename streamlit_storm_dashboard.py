@@ -248,15 +248,15 @@ if view_mode == '2024 State Analysis':
     brush = alt.selection_interval(encodings=["x"])
 
     intensity = alt.Chart(df_trend).mark_line(point=True).encode(
-        x="month:O",
-        y="average(intensity):Q",
+        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),  # Rotate x-axis labels horizontal
+        y=alt.Y("average(intensity):Q", axis=alt.Axis(titleColor="orange")),  # Y-axis title color
         color=alt.value("orange"),
         opacity=alt.condition(brush, alt.value(1), alt.value(0.3))
     ).add_params(brush)
 
     count = alt.Chart(df_trend).mark_bar(opacity=0.5).encode(
-        x="month:O",
-        y="count():Q",
+        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),
+        y=alt.Y("count():Q", axis=alt.Axis(titleColor="steelblue")),  # Y-axis title color
         color=alt.value("steelblue")
     )
 
@@ -276,8 +276,8 @@ if view_mode == '2024 State Analysis':
 
     st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
     scatter_base = alt.Chart(df).mark_circle(size=60).encode(
-        x="TOR_LENGTH:Q",
-        y="TOR_WIDTH:Q",
+        x=alt.X("TOR_LENGTH:Q", title='Length'),
+        y=alt.Y("TOR_WIDTH:Q", title='Width'),
         color=alt.condition(
             alt.datum.STATE == selected_state,
             alt.value("orange"),
@@ -309,7 +309,7 @@ if view_mode == '2024 State Analysis':
     df_scale = filter_state(df, selected_state)
 
     scale_chart = alt.Chart(df_scale).mark_bar().encode(
-        x="TOR_F_SCALE:N",
+        x=alt.X("TOR_F_SCALE:N", title='Scale', axis=alt.Axis(labelAngle=0)), # Rotate x-axis labels horizontal
         y="count():Q",
         color=alt.Color("TOR_F_SCALE:N",
                         legend=None,
