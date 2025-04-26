@@ -191,7 +191,9 @@ if view_mode == '2024 State Analysis':
         crop_damage_chart = make_chart(agg_df, 'DAMAGE_CROPS_NUM', 'Crop Damage', '#76b7b2')
     
         # 2x2 grid
-        comparison_chart = (injuries_chart | deaths_chart) & (prop_damage_chart | crop_damage_chart)
+        top_row = alt.hconcat(injuries_chart, deaths_chart)
+        bottom_row = alt.hconcat(prop_damage_chart, crop_damage_chart)
+        comparison_chart = alt.vconcat(top_row, bottom_row)
     
         # Titles
         comparison_chart = comparison_chart.properties(
