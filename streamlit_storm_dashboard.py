@@ -221,9 +221,7 @@ if view_mode == '2024 State Analysis':
     - **Miami and parts of southern Florida** recorded several tornado events, mainly weaker tornadoes (EF0–EF1), often connected to tropical weather systems. Even lower-rated tornadoes can cause serious damage, especially in densely populated areas.
     
     ### 🏛️ Impact Across the Midwest
-    The most active region, often referred to as "**Tornado Alley**," spans much of the **Midwest**, including states like Missouri, Kansas, and Iowa. This region as a whole continued to face heightened tornado risks in 2024. This reflects ongoing patterns where warm, moist air from the Gulf meets cold, dry air from Canada, creating the perfect conditions for severe storms ([American Meteorological Society, 2022](https://www.ametsoc.org/index.cfm/ams/about-ams/ams-statements/statements-of-the-ams-in-force/tornadoes/)).
-
-     parts of Texas, Oklahoma, Kansas, and Nebraska, where warm, moist air from the Gulf of Mexico collides with cool, dry air from Canada, creating ideal conditions for severe storms 
+    The most active region, often referred to as "**Tornado Alley**," spans much of the **Midwest**, including states like Missouri, Kansas, and Iowa. This region as a whole continued to face heightened tornado risks in 2024. This reflects ongoing patterns where warm, moist air from the Gulf meets cold, dry air from Canada, creating the perfect conditions for severe storms ([American Meteorological Society, 2022](https://journals.ametsoc.org/view/journals/wefo/36/6/WAF-D-21-0087.1.xml)).
 
     🔎 Use the interactive maps and charts above to explore how tornado frequency and intensity varied across states and months.
     """)
