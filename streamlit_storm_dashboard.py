@@ -135,42 +135,7 @@ view_mode = st.sidebar.radio("Select View", ['2024 State Analysis', 'Multi-Year 
 # ========== VIEW 1: STATE ANALYSIS 2024 ==========
 if view_mode == '2024 State Analysis':
 
-    available_years = list(range(2000, 2025))
-    selected_year = st.sidebar.selectbox("Select Year:", available_years, index=available_years.index(2024))
-    df = load_data_by_year(selected_year)
-
-    all_states = sorted(df["STATE"].dropna().unique().tolist())
-    st.sidebar.markdown("### State Filters")
-    selected_state = st.sidebar.selectbox("Select State:", ["All States"] + all_states)
-
-    # Dynamically ensure all US states are represented in the map
-    # regardless of whether they have tornadoes in the selected year
-    full_state_df = pd.DataFrame(
-        [(state.name.upper(), int(state.fips)) for state in us.states.STATES],
-        columns=["STATE", "STATE_FIPS"]
-    )
-    full_state_df["id"] = full_state_df["STATE_FIPS"]
-
-    # Aggregate tornado data per state
-    state_stats = df.groupby(["STATE", "STATE_FIPS"]).agg(
-        tornado_count=('TOR_F_SCALE', 'count'),
-        avg_intensity=('intensity', 'mean')
-    ).reset_index()
-
-    # Add `id` for merge
-    state_stats["id"] = state_stats["STATE_FIPS"]
-
-    # Merge to ensure all states are included
-    state_stats = pd.merge(
-        full_state_df,
-        state_stats,
-        on=["STATE", "STATE_FIPS", "id"],
-        how="left"
-    )
-    state_stats["tornado_count"] = state_stats["tornado_count"].fillna(0)
-    state_stats["avg_intensity"] = state_stats["avg_intensity"].fillna(0)
-
-     # --- INTRO SECTION ---
+    # --- INTRO SECTION ---
     st.markdown("""
     ## Intro
 
@@ -250,6 +215,44 @@ if view_mode == '2024 State Analysis':
     
         # Show
         st.altair_chart(comparison_chart, use_container_width=True)
+
+    
+    # --- MAP SECTION SETUP ---
+    available_years = list(range(2000, 2025))
+    selected_year = st.sidebar.selectbox("Select Year:", available_years, index=available_years.index(2024))
+    df = load_data_by_year(selected_year)
+
+    all_states = sorted(df["STATE"].dropna().unique().tolist())
+    st.sidebar.markdown("### State Filters")
+    selected_state = st.sidebar.selectbox("Select State:", ["All States"] + all_states)
+
+    # Dynamically ensure all US states are represented in the map
+    # regardless of whether they have tornadoes in the selected year
+    full_state_df = pd.DataFrame(
+        [(state.name.upper(), int(state.fips)) for state in us.states.STATES],
+        columns=["STATE", "STATE_FIPS"]
+    )
+    full_state_df["id"] = full_state_df["STATE_FIPS"]
+
+    # Aggregate tornado data per state
+    state_stats = df.groupby(["STATE", "STATE_FIPS"]).agg(
+        tornado_count=('TOR_F_SCALE', 'count'),
+        avg_intensity=('intensity', 'mean')
+    ).reset_index()
+
+    # Add `id` for merge
+    state_stats["id"] = state_stats["STATE_FIPS"]
+
+    # Merge to ensure all states are included
+    state_stats = pd.merge(
+        full_state_df,
+        state_stats,
+        on=["STATE", "STATE_FIPS", "id"],
+        how="left"
+    )
+    state_stats["tornado_count"] = state_stats["tornado_count"].fillna(0)
+    state_stats["avg_intensity"] = state_stats["avg_intensity"].fillna(0)
+    
     
     # --- MAP SECTION ---
     st.markdown("""
