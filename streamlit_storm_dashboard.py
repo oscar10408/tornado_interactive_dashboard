@@ -302,8 +302,8 @@ if view_mode == '2024 State Analysis':
         color=alt.Color("TOR_F_SCALE:N",
                         legend=None,
                         scale = alt.Scale(
-                            domain=['EF0', 'EF1', 'EF2', 'EF3', 'EF4', 'EFU'],
-                            range=['#FFE135', '#FFAB28', '#FF751B', '#FF3E0D', '#FF0800', '#D3D3D3']
+                            domain=['EF0', 'EF1', 'EF2', 'EF3', 'EF4', 'EF5', 'EFU'],
+                            range=['#FEF001', '#FFCE03', '#FD9A01', '#FD6104', '#FF2C05', '#F00505', '#D3D3D3']
                         )
         )
     ).properties(width=400, height=300)
