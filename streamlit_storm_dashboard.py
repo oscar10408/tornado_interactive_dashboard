@@ -98,29 +98,6 @@ def load_data_by_year(year):
 
     return df
 
-def load_comparison_data():
-    dfs = []
-    for year in [2024]:  
-        pattern = os.path.join(os.path.dirname(__file__), 'data', f'StormEvents_details-ftp_v1.0_d{year}_c20250401_chunk_*.csv')
-        files = sorted(glob.glob(pattern))
-        if not files:
-            st.sidebar.warning(f"⚠️ No files found for year {year} with pattern {pattern}")
-            continue
-
-        for file in files:
-            try:
-                df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
-                dfs.append(df_year)
-            except Exception as e:
-                st.sidebar.error(f"❌ Error reading {file}: {e}")
-
-    if not dfs:
-        st.error("⚠️ No data files loaded. Please check the data directory and file patterns.")
-        return pd.DataFrame()
-
-    return pd.concat(dfs, ignore_index=True)
-
-
 # ========== SIDEBAR ==========
 st.sidebar.title("Tornado Dashboard Settings")
 view_mode = st.sidebar.radio("Select View", ['2024 State Analysis', 'Multi-Year Heatmap'])
@@ -137,79 +114,8 @@ if view_mode == '2024 State Analysis':
     
     """)
 
-    # Load data
-    df_comparison = load_comparison_data()
-
-    if not df_comparison.empty:
-        def convert_damage(value):
-            if pd.isnull(value) or value in ['0.00K', 0]:
-                return 0
-            scale = {'K': 1e3, 'M': 1e6, 'B': 1e9}
-            try:
-                return float(value[:-1]) * scale[value[-1]]
-            except:
-                return 0
-        df_comparison['DAMAGE_PROPERTY_NUM'] = df_comparison['DAMAGE_PROPERTY'].apply(convert_damage)
-        df_comparison['DAMAGE_CROPS_NUM'] = df_comparison['DAMAGE_CROPS'].apply(convert_damage)
-        df_comparison['TOTAL_INJURIES'] = df_comparison['INJURIES_DIRECT'] + df_comparison['INJURIES_INDIRECT']
-        df_comparison['TOTAL_DEATHS'] = df_comparison['DEATHS_DIRECT'] + df_comparison['DEATHS_INDIRECT']
-    
-        agg_df = df_comparison.groupby('EVENT_TYPE').agg({
-            'TOTAL_INJURIES': 'sum',
-            'TOTAL_DEATHS': 'sum',
-            'DAMAGE_PROPERTY_NUM': 'sum',
-            'DAMAGE_CROPS_NUM': 'sum'
-        }).reset_index()
-
-        # Chart function
-        def make_chart(df, value_col, title, color):
-            top5 = df.nlargest(5, value_col).copy()
-            top5['EVENT_TYPE'] = pd.Categorical(
-                top5['EVENT_TYPE'],
-                categories=top5.sort_values(value_col, ascending=False)['EVENT_TYPE'],
-                ordered=True
-            )
-    
-            return alt.Chart(top5).mark_bar(size=20).encode(
-                y=alt.Y('EVENT_TYPE:N', sort=None, title=None),
-                x=alt.X(f'{value_col}:Q', title=None),
-                color=alt.value(color),
-                opacity=alt.condition(
-                    alt.datum.EVENT_TYPE == 'Tornado',
-                    alt.value(1.0),
-                    alt.value(0.5)
-                )
-            ).properties(
-                width=300,
-                height=150,
-                title=title
-            )
-    
-        injuries_chart = make_chart(agg_df, 'TOTAL_INJURIES', 'Injuries', '#e15759')
-        deaths_chart = make_chart(agg_df, 'TOTAL_DEATHS', 'Deaths', '#4e79a7')
-        prop_damage_chart = make_chart(agg_df, 'DAMAGE_PROPERTY_NUM', 'Property Damage', '#f28e2b')
-        crop_damage_chart = make_chart(agg_df, 'DAMAGE_CROPS_NUM', 'Crop Damage', '#76b7b2')
-    
-        # 2x2 grid
-        top_row = alt.hconcat(injuries_chart, deaths_chart)
-        bottom_row = alt.hconcat(prop_damage_chart, crop_damage_chart)
-        comparison_chart = alt.vconcat(top_row, bottom_row)
-    
-        # Titles
-        comparison_chart = comparison_chart.properties(
-            title={
-                "text": "Top Storm Events for Injuries, Deaths, and Damage",
-                "subtitle": ["United States 2000–2024"],
-                "anchor": "start",
-                "fontSize": 26,
-                "subtitleFontSize": 18,
-                "font": "Sans-Serif",
-                "subtitleFont": "Sans-Serif"
-            }
-        )
-    
-        # Show
-        st.altair_chart(comparison_chart, use_container_width=True)
+    # Display static image
+    st.image('comparison_chart.svg', caption='Top Storm Events', use_column_width=True)
 
     
     # --- MAP SECTION SETUP ---
