@@ -154,7 +154,7 @@ if view_mode == '2024 State Analysis':
     st.markdown("<br>", unsafe_allow_html=True)   # One line break
 
     # Display static image
-    st.image('comparison_chart.svg', use_container_width=True)
+    st.image('data/comparison_chart.svg', use_container_width=True)
 
     st.markdown("""
     As you can see above, tornadoes are among the most powerful and destructive natural disasters in the United States, with the country experiencing more tornadoes than any other nation.
