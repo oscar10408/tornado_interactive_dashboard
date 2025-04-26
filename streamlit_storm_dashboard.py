@@ -297,7 +297,6 @@ if view_mode == '2024 State Analysis':
     st.altair_chart((intensity + count).resolve_scale(y="independent").properties(width=800, height=250), use_container_width=True)
 
     # --- Scatter Chart ---
-
     st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
     st.markdown("""
     Each dot represents a tornado's **path length** and **width**.
@@ -309,57 +308,88 @@ if view_mode == '2024 State Analysis':
     """)
 
     st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
-    scatter_base = alt.Chart(df).mark_circle(size=60).encode(
-        x=alt.X("TOR_LENGTH:Q", title='Length'),
-        y=alt.Y("TOR_WIDTH:Q", title='Width'),
-        color=alt.condition(
+
+    # Define color condition based on whether a state is selected
+    if selected_state == "All States":
+        color = alt.Color("STATE:N", legend=None)  # normal coloring
+    else:
+        color = alt.condition(
             alt.datum.STATE == selected_state,
             alt.value("orange"),
             alt.value("lightgray")
-        ),
+        )
+
+    scatter_base = alt.Chart(df).mark_circle(size=60).encode(
+        x=alt.X("TOR_LENGTH:Q", title='Length'),
+        y=alt.Y("TOR_WIDTH:Q", title='Width'),
+        color=color,
         tooltip=["STATE", "TOR_LENGTH", "TOR_WIDTH", "TOR_F_SCALE"]
     ).properties(width=400, height=300)
 
     st.altair_chart(scatter_base, use_container_width=True)
+
 
     # --- Scale Bar Chart ---
 
     st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
     st.markdown("""
     The Enhanced Fujita (EF) scale classifies tornadoes by wind damage:
-    
+
     - **EF0–EF1**: Weak (light to moderate damage)
     - **EF2–EF3**: Strong (considerable damage)
     - **EF4–EF5**: Violent (devastating to incredible damage)
     - **EFU**: Unrated / Unknown
-    
+
     This bar chart shows how tornadoes in the selected state are distributed by EF scale.
     """)
 
-
-    st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
-    # selected_state_scale = st.selectbox("Select State for Fujita Scale Bar Chart:", ["All States"] + all_states)
-
+    # Filter the data for the selected state
     df_scale = filter_state(df, selected_state)
 
-    scale_chart = alt.Chart(df_scale).mark_bar().encode(
-        x=alt.X("TOR_F_SCALE:N", title='Scale', axis=alt.Axis(labelAngle=0)), # Rotate x-axis labels horizontal
-        y="count():Q",
+    # Check for missing EF values
+    missing_ef = df_scale["TOR_F_SCALE"].isna().sum()
+    unknown_ef = df_scale["TOR_F_SCALE"].eq('EFU').sum()
+
+    if missing_ef > 0 or unknown_ef > 0:
+        st.warning("""
+        ⚠️ Some tornado records are missing Enhanced Fujita (EF) scale ratings in the selected state or year.
+        These tornadoes are either unrated ('EFU') or have missing information, which may cause gaps in the graph.
+        """)
+
+    # Define full EF scale order
+    ef_scale_order = ['EF0', 'EF1', 'EF2', 'EF3', 'EF4', 'EF5', 'EFU']
+
+    # Prepare full data with all EF categories represented
+    df_scale_counts = df_scale["TOR_F_SCALE"].value_counts().reset_index()
+    df_scale_counts.columns = ["TOR_F_SCALE", "count"]
+
+    # Merge with full EF scale list to ensure all categories appear
+    df_scale_full = pd.DataFrame({"TOR_F_SCALE": ef_scale_order}).merge(
+        df_scale_counts,
+        on="TOR_F_SCALE",
+        how="left"
+    ).fillna(0)
+
+    # Create the bar chart
+    scale_chart = alt.Chart(df_scale_full).mark_bar().encode(
+        x=alt.X("TOR_F_SCALE:N", title="EF Scale", axis=alt.Axis(labelAngle=0)),
+        y=alt.Y("count:Q", title="Number of Tornadoes"),
         color=alt.Color("TOR_F_SCALE:N",
                         legend=None,
-                        scale = alt.Scale(
-                            domain=['EF0', 'EF1', 'EF2', 'EF3', 'EF4', 'EF5', 'EFU'],
+                        scale=alt.Scale(
+                            domain=ef_scale_order,
                             range=['#FEF001', '#FFCE03', '#FD9A01', '#FD6104', '#FF2C05', '#F00505', '#D3D3D3']
                         )
-        )
+        ),
+        tooltip=["TOR_F_SCALE:N", "count:Q"]
     ).properties(width=400, height=300)
 
+    # Display the chart
     st.altair_chart(scale_chart, use_container_width=True)
 
     # Footer
     st.markdown("---")
     st.caption("Data: NOAA Storm Events 2024 | Interactive Dashboard built with Streamlit & Altair")
-    
 # ========== VIEW 2: MULTI-YEAR HEATMAP ==========
 else:
     # HEATMAP
