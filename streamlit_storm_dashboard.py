@@ -110,13 +110,6 @@ def load_comparison_data():
         for file in files:
             try:
                 df_year = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
-                if 'TOR_F_SCALE' not in df_year.columns:
-                    st.sidebar.warning(f"⚠️ 'TOR_F_SCALE' column missing in {file}")
-                    continue
-                if 'BEGIN_TIME' not in df_year.columns:
-                    st.sidebar.warning(f"⚠️ 'BEGIN_TIME' column missing in {file}")
-                    continue
-                df_year = df_year[~df_year['TOR_F_SCALE'].isna()].copy()
                 dfs.append(df_year)
             except Exception as e:
                 st.sidebar.error(f"❌ Error reading {file}: {e}")
