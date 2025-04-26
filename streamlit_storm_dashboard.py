@@ -103,7 +103,7 @@ def load_temperature_data():
     Load annual US temperature data from a single CSV file.
     Expects columns: YEAR, TEMPERATURE, NUM_TORNADO
     """
-    pattern = os.path.join("data_split", "US_temp.csv")
+    pattern = os.path.join("data", "US_temp.csv")
     files = sorted(glob.glob(pattern))
 
     if not files:
