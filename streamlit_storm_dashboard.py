@@ -98,6 +98,40 @@ def load_data_by_year(year):
 
     return df
 
+def load_temperature_data():
+    """
+    Load annual US temperature data from a single CSV file.
+    Expects columns: YEAR, TEMPERATURE, NUM_TORNADO
+    """
+    pattern = os.path.join("data_split", "US_temp.csv")
+    files = sorted(glob.glob(pattern))
+
+    if not files:
+        st.warning("⚠️ No files found for US_temp.csv")
+        return pd.DataFrame()
+
+    file = files[0]
+    try:
+        df = pd.read_csv(file, encoding='latin1')
+    except Exception as e:
+        st.sidebar.error(f"❌ Could not read {os.path.basename(file)}: {e}")
+        return pd.DataFrame()
+
+    # Check for required columns
+    required_cols = {'YEAR', 'TEMPERATURE', 'NUM_TORNADO'}
+    missing = required_cols - set(df.columns)
+    if missing:
+        st.sidebar.warning(f"⚠️ Missing expected columns in {os.path.basename(file)}: {missing}")
+        return pd.DataFrame()
+
+    # Keep and clean
+    df = df[['YEAR', 'TEMPERATURE', 'NUM_TORNADO']].dropna()
+    df['YEAR'] = df['YEAR'].astype(int)
+    df['TEMPERATURE'] = pd.to_numeric(df['TEMPERATURE'], errors='coerce')
+    df['NUM_TORNADO'] = pd.to_numeric(df['NUM_TORNADO'], errors='coerce')
+    df.dropna(subset=['TEMPERATURE', 'NUM_TORNADO'], inplace=True)
+
+    return df
 # ========== SIDEBAR ==========
 st.sidebar.title("Tornado Dashboard Settings")
 view_mode = st.sidebar.radio("Select View", ['2024 State Analysis', 'Multi-Year Heatmap'])
@@ -328,6 +362,8 @@ if view_mode == '2024 State Analysis':
     
 # ========== VIEW 2: MULTI-YEAR HEATMAP ==========
 else:
+    # HEATMAP
+    st.markdown('---')
     df = load_all_years_data()
 
     if df.empty:
@@ -644,12 +680,110 @@ else:
                 title="When do tornadoes occur? What is their effect?"
             )
 
-        col1, col2, col3 = st.columns([1, 2, 1])
+    st.altair_chart(full_layout, use_container_width=False)
 
-        with col2:
-            with st.container():
-                st.altair_chart(full_layout, use_container_width=False)
 
+    # Climate Change
+    st.markdown('---')
+    st.title("🔎 The impact of climate change")
+
+    st.markdown("""
+    Climate change has led to a steady rise in land surface temperatures over the past several decades. As the Earth's atmosphere warms due to increasing greenhouse gas emissions, land areas in particular have experienced significant heating. This warming influences weather systems by increasing atmospheric instability, providing more energy and moisture for the formation of severe storms.
+
+    Tornadoes, which develop from powerful thunderstorms, are directly affected by these atmospheric changes. Warmer land surfaces create conditions more favorable for strong convection, making it easier for tornadoes to form under the right circumstances. Although tornado formation also depends on factors such as wind shear, the overall thermodynamic environment becomes more supportive in a warmer climate.
+
+    The chart clearly shows a positive correlation between land surface temperature anomalies and the number of tornadoes reported each year. As land temperatures have risen, particularly since the early 2000s, tornado counts have also increased sharply. Before 1990, most years recorded fewer than 1,000 tornadoes; today, it is common to see more than 1,500 tornadoes annually. While improved detection explains part of the rise, the broader pattern suggests that rising land temperatures are indeed contributing to higher tornado activity.
+    """)
+
+    st.markdown('---')
+    # 載入氣候＋龍捲風資料
+    climate_data = load_temperature_data()  # 你剛寫好的函式
+    if climate_data.empty:
+        st.warning("⚠️ No temperature data found.")
+    else:
+        # 計算 anomaly
+        mean_temp = climate_data['TEMPERATURE'].mean()
+        climate_data['TEMP_ANOMALY'] = climate_data['TEMPERATURE'] - mean_temp
+        climate_data['POS_ANOMALY'] = climate_data['TEMP_ANOMALY'].clip(lower=0)
+        climate_data['NEG_ANOMALY'] = climate_data['TEMP_ANOMALY'].clip(upper=0)
+
+        # Base chart
+        base = alt.Chart(climate_data).encode(
+            x=alt.X('YEAR:O',
+                    title=None,
+                    axis=alt.Axis(values=list(range(1950, 2030, 5))))
+        )
+
+        # 溫度 anomaly bars
+        pos_bar = base.mark_bar(color='lightblue').encode(
+            y=alt.Y('POS_ANOMALY:Q', scale=alt.Scale(domain=[-4,4]), title='Temp Anomaly (°C)'),
+            opacity=alt.value(0.5),
+            tooltip=['YEAR','TEMP_ANOMALY']
+        )
+        neg_bar = base.mark_bar(color='lightblue').encode(
+            y=alt.Y('NEG_ANOMALY:Q', title='Temp Anomaly (°C)'),
+            opacity=alt.value(0.5),
+            tooltip=['YEAR','TEMP_ANOMALY']
+        )
+
+        # y=0 虛線
+        zero_line = alt.Chart(pd.DataFrame({'y':[0]})).mark_rule(
+            strokeDash=[4,4], color='gray'
+        ).encode(y='y:Q')
+
+        # 2000 以後灰底
+        highlight_bg = alt.Chart(pd.DataFrame({
+            'start':[2000],'end':[climate_data['YEAR'].max()]
+        })).mark_rect(opacity=0.35, color='gray').encode(
+            x='start:O', x2='end:O'
+        )
+        
+        temp_anomaly_layer = alt.layer(
+            highlight_bg,
+            pos_bar,
+            neg_bar,
+            zero_line
+        ).resolve_scale(
+            y='shared'
+        )
+
+        # Tornado 折線 + 點 (brush 篩選)
+        tornado_line = alt.Chart(climate_data).mark_line(
+            color='darkgreen', strokeWidth=3
+        ).encode(
+            x='YEAR:O',
+            y=alt.Y('NUM_TORNADO:Q',
+                    axis=alt.Axis(title='No. Tornadoes', titleColor='darkgreen'),
+                    scale=alt.Scale(domain=[-1000,2500]))
+        )
+
+        tornado_points = alt.Chart(climate_data).mark_point(
+            filled=True, size=80, color='white',
+            stroke='darkgreen', strokeWidth=2
+        ).encode(
+            x='YEAR:O',
+            y=alt.Y('NUM_TORNADO:Q',axis=alt.Axis(title='No. Tornadoes', titleColor='darkgreen'),
+                    scale=alt.Scale(domain=[-1000,2500])),
+            tooltip=['YEAR','NUM_TORNADO']
+        )
+
+        tornado_line_points = alt.layer(
+            tornado_line, tornado_points
+        ).resolve_scale('shared')
+
+        # 組合圖層並加入 brush
+        interact_chart = alt.layer(
+            temp_anomaly_layer,
+            tornado_line_points
+        ).resolve_scale(
+            y='independent'
+        ).properties(
+            width=800, height=400,
+            title=alt.TitleParams("Do higher land temperatures mean more tornadoes?", fontSize=25, anchor='middle')
+        )
+
+        st.altair_chart(interact_chart, use_container_width=True)
             # Footer
-            st.markdown("---")
-            st.caption("Data: NOAA Storm Events | Interactive Dashboard built with Streamlit & Altair")
+        st.markdown("---")
+        st.caption("Data: NOAA Storm Events | Interactive Dashboard built with Streamlit & Altair")
+
