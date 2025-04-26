@@ -123,7 +123,7 @@ if view_mode == '2024 State Analysis':
     st.image('comparison_chart.svg', use_container_width=True)
 
     st.markdown("""
-    As you can see above, tornadoes are among the most powerful and destructive natural disasters in the United States, with the country experiencing more tornadoes than any other nation.  
+    As you can see above, tornadoes are among the most powerful and destructive natural disasters in the United States, with the country experiencing more tornadoes than any other nation.
     On average, about 1,000 tornadoes are reported each year across the U.S., causing significant damage to property, crops, and human life ([NOAA, 2023](https://www.noaa.gov/education/resource-collections/weather-atmosphere/tornadoes)).
     As you explore the interactive charts below, think about how these different categories show up in different ways.
     """)
