@@ -762,7 +762,7 @@ else:
         # 2000 以後灰底
         highlight_bg = alt.Chart(pd.DataFrame({
             'start':[2000],'end':[climate_data['YEAR'].max()]
-        })).mark_rect(opacity=0.35, color='gray').encode(
+        })).mark_rect(opacity=0.25, color='gray').encode(
             x='start:O', x2='end:O'
         )
         
