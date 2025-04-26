@@ -121,7 +121,7 @@ if view_mode == '2024 State Analysis':
     # Display static image
     st.image('comparison_chart.svg', use_container_width=True)
 
-     st.markdown("""
+    st.markdown("""
     First 
     """)
 
