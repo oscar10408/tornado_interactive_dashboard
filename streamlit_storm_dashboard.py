@@ -110,6 +110,7 @@ if view_mode == '2024 State Analysis':
     ## How do tornadoes compare with other storm events?
 
     First off, let's take a look at how the destructive force of tornadoes compares with other storm events in the U.S., using the most recent data from 2024 as a snapshot of current annual trends.
+    While technological advances in forecasting have improved warning times, tornadoes continue to pose major risks, with 2024 data showing they remain a leading cause of storm-related injuries and considerable economic losses ([NOAA, 2024](https://www.spc.noaa.gov/climo/)).
     Data tracked on injuries and deaths (in number), as well as damage to both property and crops (in dollars) can give us insight into this.
 
     In the below graph, we can see that in 2024 tornadoes were, by far, the number 1 cause of injuries! They are also the 4th highest cause of property damage, and fall in the top 10 for both deaths (6th) and crop damage (9th) as well.
@@ -122,7 +123,9 @@ if view_mode == '2024 State Analysis':
     st.image('comparison_chart.svg', use_container_width=True)
 
     st.markdown("""
-    As you look through the charts, think about how tornadoes’ ranking across these categories tells a more nuanced story than simply counting events. 
+    As you can see above, tornadoes are among the most powerful and destructive natural disasters in the United States, with the country experiencing more tornadoes than any other nation.  
+    On average, about 1,000 tornadoes are reported each year across the U.S., causing significant damage to property, crops, and human life ([NOAA, 2023](https://www.noaa.gov/education/resource-collections/weather-atmosphere/tornadoes)).
+    As you explore the interactive charts below, think about how these different categories show up in different ways.
     """)
 
     
@@ -218,8 +221,10 @@ if view_mode == '2024 State Analysis':
     - **Miami and parts of southern Florida** recorded several tornado events, mainly weaker tornadoes (EF0–EF1), often connected to tropical weather systems. Even lower-rated tornadoes can cause serious damage, especially in densely populated areas.
     
     ### 🏛️ Impact Across the Midwest
-    The **Midwest region as a whole** — including states like Missouri, Kansas, and Iowa — continued to face heightened tornado risks. This reflects ongoing patterns where warm, moist air from the Gulf meets cold, dry air from Canada, creating the perfect conditions for severe storms.
-    
+    The most active region, often referred to as "**Tornado Alley**," spans much of the **Midwest**, including states like Missouri, Kansas, and Iowa. This region as a whole continued to face heightened tornado risks in 2024. This reflects ongoing patterns where warm, moist air from the Gulf meets cold, dry air from Canada, creating the perfect conditions for severe storms ([American Meteorological Society, 2022](https://www.ametsoc.org/index.cfm/ams/about-ams/ams-statements/statements-of-the-ams-in-force/tornadoes/)).
+
+     parts of Texas, Oklahoma, Kansas, and Nebraska, where warm, moist air from the Gulf of Mexico collides with cool, dry air from Canada, creating ideal conditions for severe storms 
+
     🔎 Use the interactive maps and charts above to explore how tornado frequency and intensity varied across states and months.
     """)
 
