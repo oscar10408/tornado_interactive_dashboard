@@ -14,19 +14,12 @@ Built with **Streamlit** and **Altair**, this dashboard offers interactive visua
 |  |  |  |
 |:---:|:---:|:---:|
 | ![](Image/preview_1.png) | ![](Image/preview_2.png) | ![](Image/preview_3.png) |
-| *Tornadoes by State (2024)* | *Monthly Tornado Trends* | *Tornado Intensity Distribution* |
+| *Top Storm Events for Injuries, Deaths, and Damage (U.S., 2024)* | *U.S. Tornado Distribution by State* | *Monthly Tornado Frequency and Intensity Trends* |
 
 |  |  |  |
 |:---:|:---:|:---:|
 | ![](Image/preview_4.png) | ![](Image/preview_5.png) | ![](Image/preview_6.png) |
-| *Tornado Size Scatterplot* | *Multi-Year Tornado Heatmap* | *Hourly Tornado Occurrence* |
-
-### Climate vs Tornado Activity
-
-|  |
-|:---:|
-| ![](Image/preview_7.png) |
-| *Land Temperature vs Tornado Counts (1950–2024)* |
+| *Tornado Size Distribution: Length vs Width Across All States* | *Tornado Timing and Impact Heatmap* | *Climate Change and Tornado Trends (1950–2024)* |
 
 ---
 
