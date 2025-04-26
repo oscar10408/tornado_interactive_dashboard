@@ -137,228 +137,259 @@ st.sidebar.title("Tornado Dashboard Settings")
 view_mode = st.sidebar.radio("Select View", ['2024 State Analysis', 'Multi-Year Heatmap'])
 
 # ========== VIEW 1: STATE ANALYSIS 2024 ==========
- if view_mode == '2024 State Analysis':
- 
-     # --- INTRO SECTION ---
-     st.markdown("""
-     ## How do tornadoes compare with other storm events?
- 
-     First off, let's take a look at how the destructive force of tornadoes compares with other storm events in the U.S., using the most recent data from 2024 as a current snapshot of annual trends.
-     While technological advances in forecasting have improved warning times, tornadoes continue to pose major risks, with 2024 data showing they remain a leading cause of storm-related injuries and considerable economic losses ([NOAA, 2024](https://www.spc.noaa.gov/climo/)).
-     
-     Data tracked on injuries and deaths (in number), as well as damage to both property and crops (in dollars) can give us insight into this.
-     In the below graph, we can see that in 2024 tornadoes were, by far, the number 1 cause of injuries! They were also the 4th highest cause of property damage, and fell in the top 10 for both deaths (6th) and crop damage (9th) as well.
-     Looking across multiple types of impact—injuries, deaths, and economic damage—gives a fuller picture of how tornadoes affect communities beyond just headline-grabbing destruction.
-     
-     """)
-     st.markdown("<br>", unsafe_allow_html=True)   # One line break
- 
-     # Display static image
-     st.image('data/comparison_chart.svg', use_container_width=True)
- 
-     st.markdown("""
-     As you can see above, tornadoes are among the most powerful and destructive natural disasters in the United States, with the country experiencing more tornadoes than any other nation.
-     On average, about 1,000 tornadoes are reported each year across the U.S., causing significant damage to property, crops, and human life ([NOAA, 2023](https://www.noaa.gov/education/resource-collections/weather-atmosphere/tornadoes)).
-     As you explore the interactive charts below, think about how these different categories show up in different ways.
-     """)
- 
- 
-     # --- MAP SECTION SETUP ---
-     available_years = list(range(2000, 2025))
-     selected_year = st.sidebar.selectbox("Select Year:", available_years, index=available_years.index(2024))
-     df = load_data_by_year(selected_year)
- 
-     all_states = sorted(df["STATE"].dropna().unique().tolist())
-     st.sidebar.markdown("### State Filters")
-     selected_state = st.sidebar.selectbox("Select State:", ["All States"] + all_states)
- 
-     # Dynamically ensure all US states are represented in the map
-     # regardless of whether they have tornadoes in the selected year
-     full_state_df = pd.DataFrame(
-         [(state.name.upper(), int(state.fips)) for state in us.states.STATES],
-         columns=["STATE", "STATE_FIPS"]
-     )
-     full_state_df["id"] = full_state_df["STATE_FIPS"]
- 
-     # Aggregate tornado data per state
-     state_stats = df.groupby(["STATE", "STATE_FIPS"]).agg(
-         tornado_count=('TOR_F_SCALE', 'count'),
-         avg_intensity=('intensity', 'mean')
-     ).reset_index()
- 
-     # Add `id` for merge
-     state_stats["id"] = state_stats["STATE_FIPS"]
- 
-     # Merge to ensure all states are included
-     state_stats = pd.merge(
-         full_state_df,
-         state_stats,
-         on=["STATE", "STATE_FIPS", "id"],
-         how="left"
-     )
-     state_stats["tornado_count"] = state_stats["tornado_count"].fillna(0)
-     state_stats["avg_intensity"] = state_stats["avg_intensity"].fillna(0)
- 
-     # --- MAP SECTION ---
-     st.markdown("""
-     ## 📘 Dashboard Guide
-     
-     Welcome to the Tornado Tracker Dashboard — an interactive data exploration tool that reveals patterns in U.S. tornado activity.
-     
-     ### 🔍 How to Use
-     - Use the **sidebar** to select a specific **year** and **state**
-     - Hover over visualizations to view detailed statistics
-     - Explore monthly, geographic, and scale-based patterns
-     
-     """)
- 
-     st.subheader(f"1️⃣ Geographic Distribution – {selected_state}, {selected_year}")
-     st.markdown("""
-     This map shows the number of tornadoes per state. Darker red shades indicate higher counts. Hover over a state to view:
-     - **Total tornadoes**
-     - **Average intensity** (based on EF scale)
-     
-     🕵️‍♂️ **Tip**: Gray areas had **no recorded tornadoes** during the selected year.
-     """)
- 
-     states_geo = alt.topo_feature(data.us_10m.url, 'states')
- 
- 
-     map_chart = alt.Chart(states_geo).mark_geoshape().encode(
-         color=alt.condition(
-             alt.datum.tornado_count > 0,
-             alt.Color('tornado_count:Q', scale=alt.Scale(scheme='reds'), title='Tornado Count'),
-             alt.value('lightgray')  # gray fallback for no tornadoes
-         ),
-         tooltip=[
-             alt.Tooltip('STATE:N', title='State'),
-             alt.Tooltip('tornado_count:Q', title='Tornado Count'),
-             alt.Tooltip('avg_intensity:Q', title='Avg Intensity')
-         ]
-     ).transform_lookup(
-         lookup='id',
-         from_=alt.LookupData(state_stats, key='id', fields=['STATE', 'tornado_count', 'avg_intensity'])
-     ).project(
-         type='albersUsa'
-     ).properties(width=800, height=500)
- 
-     st.altair_chart(map_chart, use_container_width=True)
- 
-     st.markdown("""
-     ## 🌪️ Tornado Impacts Across Key Regions
-     
-     Tornadoes cause devastating impacts across many U.S. regions. In 2024, several areas were particularly affected:
-     
-     ### ⚠️ Areas of Significant Tornado Activity:
-     - **Oklahoma** experienced some of the highest tornado activity nationwide, with numerous strong and long-tracked tornadoes causing damage across both rural and urban communities.
-     - **Illinois** also faced an unusually active season. Tornadoes struck parts of the state that are typically vulnerable, affecting towns, farmland, and suburbs alike.
-     - **Miami and parts of southern Florida** recorded several tornado events, mainly weaker tornadoes (EF0–EF1), often connected to tropical weather systems. Even lower-rated tornadoes can cause serious damage, especially in densely populated areas.
-     
-     ### 🏛️ Impact Across the Midwest
-     The most active region, often referred to as "**Tornado Alley**," spans much of the **Midwest**, including states like Missouri, Kansas, and Iowa. This region as a whole continued to face heightened tornado risks in 2024. This reflects ongoing patterns where warm, moist air from the Gulf meets cold, dry air from Canada, creating the perfect conditions for severe storms ([American Meteorological Society, 2022](https://journals.ametsoc.org/view/journals/wefo/36/6/WAF-D-21-0087.1.xml)).
- 
-     🔎 Use the interactive maps and charts above to explore how tornado frequency and intensity varied across states and months.
-     """)
- 
- 
-     # Filtered Data
-     def filter_state(df, selected_state):
-         return df if selected_state == "All States" else df[df["STATE"] == selected_state]
- 
-     # --- Monthly Trend Chart ---
- 
-     st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
-     st.markdown("""
-     This chart shows how tornado **frequency** and **intensity** change throughout the year.
-     
-     - **Bars** = Number of tornadoes per month
-     - **Orange line** = Average tornado intensity (EF scale)
-     
-     Use the brush tool to highlight specific months!
-     """)
- 
-     st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
-     df_trend = filter_state(df, selected_state)
-     brush = alt.selection_interval(encodings=["x"])
- 
-     intensity = alt.Chart(df_trend).mark_line(point=True).encode(
-         x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),  # Rotate x-axis labels horizontal
-         y=alt.Y("average(intensity):Q", axis=alt.Axis(titleColor="orange")),  # Y-axis title color
-         color=alt.value("orange"),
-         opacity=alt.condition(brush, alt.value(1), alt.value(0.3))
-     ).add_params(brush)
- 
-     count = alt.Chart(df_trend).mark_bar(opacity=0.5).encode(
-         x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),
-         y=alt.Y("count():Q", axis=alt.Axis(titleColor="steelblue")),  # Y-axis title color
-         color=alt.value("steelblue")
-     )
- 
-     st.altair_chart((intensity + count).resolve_scale(y="independent").properties(width=800, height=250), use_container_width=True)
- 
-     # --- Scatter Chart ---
- 
-     st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
-     st.markdown("""
-     Each dot represents a tornado's **path length** and **width**.
-     
-     - **Orange**: Tornadoes from the selected state (if selected in sidebar)
-     - **Gray**: All other tornadoes in the U.S. in the selected year
-     
-     Use this to spot unusually large or narrow tornadoes!
-     """)
- 
-     st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
-     scatter_base = alt.Chart(df).mark_circle(size=60).encode(
-         x=alt.X("TOR_LENGTH:Q", title='Length'),
-         y=alt.Y("TOR_WIDTH:Q", title='Width'),
-         color=alt.condition(
-             alt.datum.STATE == selected_state,
-             alt.value("orange"),
-             alt.value("lightgray")
-         ),
-         tooltip=["STATE", "TOR_LENGTH", "TOR_WIDTH", "TOR_F_SCALE"]
-     ).properties(width=400, height=300)
- 
-     st.altair_chart(scatter_base, use_container_width=True)
- 
-     # --- Scale Bar Chart ---
- 
-     st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
-     st.markdown("""
-     The Enhanced Fujita (EF) scale classifies tornadoes by wind damage:
-     
-     - **EF0–EF1**: Weak (light to moderate damage)
-     - **EF2–EF3**: Strong (considerable damage)
-     - **EF4–EF5**: Violent (devastating to incredible damage)
-     - **EFU**: Unrated / Unknown
-     
-     This bar chart shows how tornadoes in the selected state are distributed by EF scale.
-     """)
- 
- 
-     st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
-     # selected_state_scale = st.selectbox("Select State for Fujita Scale Bar Chart:", ["All States"] + all_states)
- 
-     df_scale = filter_state(df, selected_state)
- 
-     scale_chart = alt.Chart(df_scale).mark_bar().encode(
-         x=alt.X("TOR_F_SCALE:N", title='Scale', axis=alt.Axis(labelAngle=0)), # Rotate x-axis labels horizontal
-         y="count():Q",
-         color=alt.Color("TOR_F_SCALE:N",
-                         legend=None,
-                         scale = alt.Scale(
-                             domain=['EF0', 'EF1', 'EF2', 'EF3', 'EF4', 'EF5', 'EFU'],
-                             range=['#FEF001', '#FFCE03', '#FD9A01', '#FD6104', '#FF2C05', '#F00505', '#D3D3D3']
-                         )
-         )
-     ).properties(width=400, height=300)
- 
-     st.altair_chart(scale_chart, use_container_width=True)
- 
-     # Footer
-     st.markdown("---")
-     st.caption("Data: NOAA Storm Events 2024 | Interactive Dashboard built with Streamlit & Altair")
+if view_mode == '2024 State Analysis':
+
+    # --- INTRO SECTION ---
+    st.markdown("""
+    ## How do tornadoes compare with other storm events?
+
+    First off, let's take a look at how the destructive force of tornadoes compares with other storm events in the U.S., using the most recent data from 2024 as a current snapshot of annual trends.
+    While technological advances in forecasting have improved warning times, tornadoes continue to pose major risks, with 2024 data showing they remain a leading cause of storm-related injuries and considerable economic losses ([NOAA, 2024](https://www.spc.noaa.gov/climo/)).
+    
+    Data tracked on injuries and deaths (in number), as well as damage to both property and crops (in dollars) can give us insight into this.
+    In the below graph, we can see that in 2024 tornadoes were, by far, the number 1 cause of injuries! They were also the 4th highest cause of property damage, and fell in the top 10 for both deaths (6th) and crop damage (9th) as well.
+    Looking across multiple types of impact—injuries, deaths, and economic damage—gives a fuller picture of how tornadoes affect communities beyond just headline-grabbing destruction.
+    
+    """)
+    st.markdown("<br>", unsafe_allow_html=True)   # One line break
+
+    # Display static image
+    st.image('data/comparison_chart.svg', use_container_width=True)
+
+    st.markdown("""
+    As you can see above, tornadoes are among the most powerful and destructive natural disasters in the United States, with the country experiencing more tornadoes than any other nation.
+    On average, about 1,000 tornadoes are reported each year across the U.S., causing significant damage to property, crops, and human life ([NOAA, 2023](https://www.noaa.gov/education/resource-collections/weather-atmosphere/tornadoes)).
+    As you explore the interactive charts below, think about how these different categories show up in different ways.
+    """)
+
+    
+    # --- MAP SECTION SETUP ---
+    available_years = list(range(2000, 2025))
+    selected_year = st.sidebar.selectbox("Select Year:", available_years, index=available_years.index(2024))
+    df = load_data_by_year(selected_year)
+
+    all_states = sorted(df["STATE"].dropna().unique().tolist())
+    st.sidebar.markdown("### State Filters")
+    selected_state = st.sidebar.selectbox("Select State:", ["All States"] + all_states)
+
+    # Dynamically ensure all US states are represented in the map
+    # regardless of whether they have tornadoes in the selected year
+    full_state_df = pd.DataFrame(
+        [(state.name.upper(), int(state.fips)) for state in us.states.STATES],
+        columns=["STATE", "STATE_FIPS"]
+    )
+    full_state_df["id"] = full_state_df["STATE_FIPS"]
+
+    # Aggregate tornado data per state
+    state_stats = df.groupby(["STATE", "STATE_FIPS"]).agg(
+        tornado_count=('TOR_F_SCALE', 'count'),
+        avg_intensity=('intensity', 'mean')
+    ).reset_index()
+
+    # Add `id` for merge
+    state_stats["id"] = state_stats["STATE_FIPS"]
+
+    # Merge to ensure all states are included
+    state_stats = pd.merge(
+        full_state_df,
+        state_stats,
+        on=["STATE", "STATE_FIPS", "id"],
+        how="left"
+    )
+    state_stats["tornado_count"] = state_stats["tornado_count"].fillna(0)
+    state_stats["avg_intensity"] = state_stats["avg_intensity"].fillna(0)
+
+    # --- MAP SECTION ---
+    st.markdown("""
+    ## 📘 Dashboard Guide
+    
+    Welcome to the Tornado Tracker Dashboard — an interactive data exploration tool that reveals patterns in U.S. tornado activity.
+    
+    ### 🔍 How to Use
+    - Use the **sidebar** to select a specific **year** and **state**
+    - Hover over visualizations to view detailed statistics
+    - Explore monthly, geographic, and scale-based patterns
+    
+    """)
+    
+    st.subheader(f"1️⃣ Geographic Distribution – {selected_state}, {selected_year}")
+    st.markdown("""
+    This map shows the number of tornadoes per state. Darker red shades indicate higher counts. Hover over a state to view:
+    - **Total tornadoes**
+    - **Average intensity** (based on EF scale)
+    
+    🕵️‍♂️ **Tip**: Gray areas had **no recorded tornadoes** during the selected year.
+    """)
+
+    states_geo = alt.topo_feature(data.us_10m.url, 'states')
+    
+
+    map_chart = alt.Chart(states_geo).mark_geoshape().encode(
+        color=alt.condition(
+            alt.datum.tornado_count > 0,
+            alt.Color('tornado_count:Q', scale=alt.Scale(scheme='reds'), title='Tornado Count'),
+            alt.value('lightgray')  # gray fallback for no tornadoes
+        ),
+        tooltip=[
+            alt.Tooltip('STATE:N', title='State'),
+            alt.Tooltip('tornado_count:Q', title='Tornado Count'),
+            alt.Tooltip('avg_intensity:Q', title='Avg Intensity')
+        ]
+    ).transform_lookup(
+        lookup='id',
+        from_=alt.LookupData(state_stats, key='id', fields=['STATE', 'tornado_count', 'avg_intensity'])
+    ).project(
+        type='albersUsa'
+    ).properties(width=800, height=500)
+
+    st.altair_chart(map_chart, use_container_width=True)
+
+    st.markdown("""
+    ## 🌪️ Tornado Impacts Across Key Regions
+    
+    Tornadoes cause devastating impacts across many U.S. regions. In 2024, several areas were particularly affected:
+    
+    ### ⚠️ Areas of Significant Tornado Activity:
+    - **Oklahoma** experienced some of the highest tornado activity nationwide, with numerous strong and long-tracked tornadoes causing damage across both rural and urban communities.
+    - **Illinois** also faced an unusually active season. Tornadoes struck parts of the state that are typically vulnerable, affecting towns, farmland, and suburbs alike.
+    - **Miami and parts of southern Florida** recorded several tornado events, mainly weaker tornadoes (EF0–EF1), often connected to tropical weather systems. Even lower-rated tornadoes can cause serious damage, especially in densely populated areas.
+    
+    ### 🏛️ Impact Across the Midwest
+    The most active region, often referred to as "**Tornado Alley**," spans much of the **Midwest**, including states like Missouri, Kansas, and Iowa. This region as a whole continued to face heightened tornado risks in 2024. This reflects ongoing patterns where warm, moist air from the Gulf meets cold, dry air from Canada, creating the perfect conditions for severe storms ([American Meteorological Society, 2022](https://journals.ametsoc.org/view/journals/wefo/36/6/WAF-D-21-0087.1.xml)).
+
+    🔎 Use the interactive maps and charts above to explore how tornado frequency and intensity varied across states and months.
+    """)
+
+
+    # Filtered Data
+    def filter_state(df, selected_state):
+        return df if selected_state == "All States" else df[df["STATE"] == selected_state]
+
+    # --- Monthly Trend Chart ---
+
+    st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
+    st.markdown("""
+    This chart shows how tornado **frequency** and **intensity** change throughout the year.
+    
+    - **Bars** = Number of tornadoes per month
+    - **Orange line** = Average tornado intensity (EF scale)
+    
+    Use the brush tool to highlight specific months!
+    """)
+
+    st.subheader(f"2️⃣ Monthly Tornado Trends – {selected_state}")
+    df_trend = filter_state(df, selected_state)
+    brush = alt.selection_interval(encodings=["x"])
+
+    intensity = alt.Chart(df_trend).mark_line(point=True).encode(
+        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),  # Rotate x-axis labels horizontal
+        y=alt.Y("average(intensity):Q", axis=alt.Axis(titleColor="orange")),  # Y-axis title color
+        color=alt.value("orange"),
+        opacity=alt.condition(brush, alt.value(1), alt.value(0.3))
+    ).add_params(brush)
+
+    count = alt.Chart(df_trend).mark_bar(opacity=0.5).encode(
+        x=alt.X("month:O", axis=alt.Axis(labelAngle=0)),
+        y=alt.Y("count():Q", axis=alt.Axis(titleColor="steelblue")),  # Y-axis title color
+        color=alt.value("steelblue")
+    )
+
+    st.altair_chart((intensity + count).resolve_scale(y="independent").properties(width=800, height=250), use_container_width=True)
+
+    # --- Scatter Chart ---
+    st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
+    st.markdown("""
+    Each dot represents a tornado's **path length** and **width**.
+    
+    - **Orange**: Tornadoes from the selected state (if selected in sidebar)
+    - **Gray**: All other tornadoes in the U.S. in the selected year
+    
+    Use this to spot unusually large or narrow tornadoes!
+    """)
+
+    st.subheader(f"3️⃣ Tornado Size: Length vs. Width – {selected_state}")
+
+    # Define color condition based on whether a state is selected
+    if selected_state == "All States":
+        color = alt.Color("STATE:N", legend=None)  # normal coloring
+    else:
+        color = alt.condition(
+            alt.datum.STATE == selected_state,
+            alt.value("orange"),
+            alt.value("lightgray")
+        )
+
+    scatter_base = alt.Chart(df).mark_circle(size=60).encode(
+        x=alt.X("TOR_LENGTH:Q", title='Length'),
+        y=alt.Y("TOR_WIDTH:Q", title='Width'),
+        color=color,
+        tooltip=["STATE", "TOR_LENGTH", "TOR_WIDTH", "TOR_F_SCALE"]
+    ).properties(width=400, height=300)
+
+    st.altair_chart(scatter_base, use_container_width=True)
+
+
+    # --- Scale Bar Chart ---
+
+    st.subheader(f"4️⃣ Tornado Frequency by Fujita Scale – {selected_state}")
+    st.markdown("""
+    The Enhanced Fujita (EF) scale classifies tornadoes by wind damage:
+
+    - **EF0–EF1**: Weak (light to moderate damage)
+    - **EF2–EF3**: Strong (considerable damage)
+    - **EF4–EF5**: Violent (devastating to incredible damage)
+    - **EFU**: Unrated / Unknown
+
+    This bar chart shows how tornadoes in the selected state are distributed by EF scale.
+    """)
+
+    # Filter the data for the selected state
+    df_scale = filter_state(df, selected_state)
+
+    # Check for missing EF values
+    missing_ef = df_scale["TOR_F_SCALE"].isna().sum()
+    unknown_ef = df_scale["TOR_F_SCALE"].eq('EFU').sum()
+
+    if missing_ef > 0 or unknown_ef > 0:
+        st.warning("""
+        ⚠️ Some tornado records are missing Enhanced Fujita (EF) scale ratings in the selected state or year.
+        These tornadoes are either unrated ('EFU') or have missing information, which may cause gaps in the graph.
+        """)
+
+    # Define full EF scale order
+    ef_scale_order = ['EF0', 'EF1', 'EF2', 'EF3', 'EF4', 'EF5', 'EFU']
+
+    # Prepare full data with all EF categories represented
+    df_scale_counts = df_scale["TOR_F_SCALE"].value_counts().reset_index()
+    df_scale_counts.columns = ["TOR_F_SCALE", "count"]
+
+    # Merge with full EF scale list to ensure all categories appear
+    df_scale_full = pd.DataFrame({"TOR_F_SCALE": ef_scale_order}).merge(
+        df_scale_counts,
+        on="TOR_F_SCALE",
+        how="left"
+    ).fillna(0)
+
+    # Create the bar chart
+    scale_chart = alt.Chart(df_scale_full).mark_bar().encode(
+        x=alt.X("TOR_F_SCALE:N", title="EF Scale", axis=alt.Axis(labelAngle=0)),
+        y=alt.Y("count:Q", title="Number of Tornadoes"),
+        color=alt.Color("TOR_F_SCALE:N",
+                        legend=None,
+                        scale=alt.Scale(
+                            domain=ef_scale_order,
+                            range=['#FEF001', '#FFCE03', '#FD9A01', '#FD6104', '#FF2C05', '#F00505', '#D3D3D3']
+                        )
+        ),
+        tooltip=["TOR_F_SCALE:N", "count:Q"]
+    ).properties(width=400, height=300)
+
+    # Display the chart
+    st.altair_chart(scale_chart, use_container_width=True)
+
+    # Footer
+    st.markdown("---")
+    st.caption("Data: NOAA Storm Events 2024 | Interactive Dashboard built with Streamlit & Altair")
 # ========== VIEW 2: MULTI-YEAR HEATMAP ==========
 else:
     # HEATMAP
@@ -782,4 +813,3 @@ else:
             # Footer
         st.markdown("---")
         st.caption("Data: NOAA Storm Events | Interactive Dashboard built with Streamlit & Altair")
-
